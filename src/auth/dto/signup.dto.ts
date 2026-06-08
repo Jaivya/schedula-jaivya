@@ -1,8 +1,14 @@
-import { Role } from '../../common/enums/role.enum';
+import { IsEmail, IsString, IsIn, MinLength } from 'class-validator';
 
 export class SignupDto {
-  name!: string;
+  @IsEmail()
   email!: string;
+
+  @IsString()
+  @MinLength(6)
   password!: string;
-  role!: Role;
+
+  @IsString()
+  @IsIn(['DOCTOR', 'PATIENT'])
+  role!: string;
 }

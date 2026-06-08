@@ -3,6 +3,7 @@ import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
+import { Role } from '../common/enums/role.enum';
 
 @Injectable()
 export class AuthService {
@@ -14,7 +15,9 @@ export class AuthService {
   signup(signupDto: SignupDto) {
     const user = {
       id: Date.now(),
-      ...signupDto,
+      email: signupDto.email,
+      password: signupDto.password,
+      role: signupDto.role as Role,
     };
 
     this.usersService.create(user);

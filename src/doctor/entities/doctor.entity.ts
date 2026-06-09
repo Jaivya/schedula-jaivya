@@ -21,7 +21,7 @@ export class Doctor {
   consultationFee!: number;
 
   @Column()
-  availability!: string;
+  availability!: boolean;
 
   @Column()
   profileDetails!: string;

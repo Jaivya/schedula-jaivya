@@ -4,8 +4,11 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 
+
 import { DoctorController } from './doctor/doctor.controller';
 import { PatientController } from './patient/patient.controller';
+import { DoctorService } from './doctor/doctor.service';
+import { PatientService } from './patient/patient.service';
 
 @Module({
   imports: [AuthModule, UsersModule],
@@ -14,6 +17,6 @@ import { PatientController } from './patient/patient.controller';
     DoctorController,
     PatientController,
   ],
-  providers: [AppService],
+  providers: [AppService, DoctorService, PatientService],
 })
 export class AppModule {}

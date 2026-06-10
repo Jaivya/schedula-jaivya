@@ -43,9 +43,13 @@ export class DoctorService {
     },
   ];
 
-  // Day 3 APIs
-
   create(profile: any) {
+    if (Object.keys(this.doctorProfile).length > 0) {
+      return {
+        message: 'Doctor profile already exists',
+      };
+    }
+
     this.doctorProfile = profile;
 
     return {
@@ -55,10 +59,22 @@ export class DoctorService {
   }
 
   findOne() {
+    if (Object.keys(this.doctorProfile).length === 0) {
+      return {
+        message: 'Doctor profile not found',
+      };
+    }
+
     return this.doctorProfile;
   }
 
   update(profile: any) {
+    if (Object.keys(this.doctorProfile).length === 0) {
+      return {
+        message: 'Doctor profile not found',
+      };
+    }
+
     this.doctorProfile = {
       ...this.doctorProfile,
       ...profile,

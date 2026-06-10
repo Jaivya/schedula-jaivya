@@ -10,8 +10,8 @@ import {
 } from '@nestjs/common';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 
 import { DoctorService } from './doctor.service';
 import { CreateDoctorProfileDto } from './dto/create-doctor-profile.dto';

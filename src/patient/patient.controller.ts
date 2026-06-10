@@ -16,16 +16,12 @@ import { CreatePatientProfileDto } from './dto/create-patient-profile.dto';
 
 @Controller('patient')
 export class PatientController {
-  constructor(
-    private readonly patientService: PatientService,
-  ) {}
+  constructor(private readonly patientService: PatientService) {}
 
   @Post('profile')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('PATIENT')
-  createProfile(
-    @Body() body: CreatePatientProfileDto,
-  ) {
+  createProfile(@Body() body: CreatePatientProfileDto) {
     return this.patientService.create(body);
   }
 
@@ -39,10 +35,7 @@ export class PatientController {
   @Patch('profile')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('PATIENT')
-  updateProfile(
-    @Body()
-    body: Partial<CreatePatientProfileDto>,
-  ) {
+  updateProfile(@Body() body: Partial<CreatePatientProfileDto>) {
     return this.patientService.update(body);
   }
 }

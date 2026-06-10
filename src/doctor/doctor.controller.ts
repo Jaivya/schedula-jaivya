@@ -4,6 +4,8 @@ import {
   Get,
   Patch,
   Post,
+  Param,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 
@@ -17,6 +19,8 @@ import { CreateDoctorProfileDto } from './dto/create-doctor-profile.dto';
 @Controller('doctor')
 export class DoctorController {
   constructor(private readonly doctorService: DoctorService) {}
+
+  // Day 3 Onboarding APIs
 
   @Post('profile')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -37,5 +41,33 @@ export class DoctorController {
   @Roles('DOCTOR')
   updateProfile(@Body() body: Partial<CreateDoctorProfileDto>) {
     return this.doctorService.update(body);
+  }
+
+  // Day 4 Discovery APIs
+
+  @Get()
+  getDoctors(
+    @Query('specialization') specialization?: string,
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('availability') availability?: string,
+  ) {
+    return this.doctorService.findAll(
+      specialization,
+      search,
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 10,
+      availability === 'true'
+        ? true
+        : availability === 'false'
+        ? false
+        : undefined,
+    );
+  }
+
+  @Get(':id')
+  getDoctorById(@Param('id') id: string) {
+    return this.doctorService.findById(Number(id));
   }
 }

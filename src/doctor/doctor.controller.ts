@@ -66,7 +66,7 @@ export class DoctorController {
     );
   }
 
-  @Get(':id')
+  @Get('details/:id')
   getDoctorById(@Param('id') id: string) {
     return this.doctorService.findById(Number(id));
   }

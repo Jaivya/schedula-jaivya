@@ -16,6 +16,9 @@ import { PatientController } from './patient/patient.controller';
 import { PatientService } from './patient/patient.service';
 import { Patient } from './patient/entities/patient.entity';
 
+import { AvailabilityModule } from './availability/availability.module';
+import { Availability } from './availability/availability.entity';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -30,7 +33,11 @@ import { Patient } from './patient/entities/patient.entity';
         rejectUnauthorized: false,
       },
 
-      entities: [Doctor, Patient],
+      entities: [
+        Doctor,
+        Patient,
+        Availability,
+      ],
 
       synchronize: false,
       autoLoadEntities: true,
@@ -38,6 +45,7 @@ import { Patient } from './patient/entities/patient.entity';
 
     AuthModule,
     UsersModule,
+    AvailabilityModule,
   ],
 
   controllers: [

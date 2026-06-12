@@ -18,6 +18,7 @@ import { Patient } from './patient/entities/patient.entity';
 
 import { AvailabilityModule } from './availability/availability.module';
 import { Availability } from './availability/availability.entity';
+import { SlotsModule } from './slots/slots.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { Availability } from './availability/availability.entity';
     AuthModule,
     UsersModule,
     AvailabilityModule,
+    SlotsModule,
   ],
 
   controllers: [

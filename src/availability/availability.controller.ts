@@ -6,14 +6,9 @@ import {
   Delete,
   Param,
   Body,
-  UseGuards,
 } from '@nestjs/common';
 
 import { AvailabilityService } from './availability.service';
-
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/roles.decorator';
 
 @Controller('doctor/availability')
 export class AvailabilityController {
@@ -22,8 +17,6 @@ export class AvailabilityController {
   ) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('DOCTOR')
   create(@Body() body: any) {
     return this.availabilityService.create(body);
   }
@@ -33,9 +26,12 @@ export class AvailabilityController {
     return this.availabilityService.findAll();
   }
 
+  @Get('overrides')
+  findOverrides() {
+    return this.availabilityService.findOverrides();
+  }
+
   @Patch(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('DOCTOR')
   update(
     @Param('id') id: string,
     @Body() body: any,
@@ -47,8 +43,6 @@ export class AvailabilityController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('DOCTOR')
   remove(@Param('id') id: string) {
     return this.availabilityService.remove(
       Number(id),
@@ -56,19 +50,19 @@ export class AvailabilityController {
   }
 
   @Post('override')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('DOCTOR')
   createOverride(@Body() body: any) {
     return this.availabilityService.createOverride(
       body,
     );
   }
 
-  @Get('date/:date')
+  @Get(':doctorId/date/:date')
   getAvailabilityByDate(
+    @Param('doctorId') doctorId: string,
     @Param('date') date: string,
   ) {
     return this.availabilityService.getAvailabilityByDate(
+      Number(doctorId),
       date,
     );
   }

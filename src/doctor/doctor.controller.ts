@@ -7,6 +7,7 @@ import {
   Param,
   Query,
   UseGuards,
+  Request,
 } from '@nestjs/common';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -25,22 +26,22 @@ export class DoctorController {
   @Post('profile')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('DOCTOR')
-  createProfile(@Body() body: CreateDoctorProfileDto) {
-    return this.doctorService.create(body);
+  createProfile(@Request() req: any, @Body() body: CreateDoctorProfileDto) {
+    return this.doctorService.create(req.user.userId, body);
   }
 
   @Get('profile')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('DOCTOR')
-  getProfile() {
-    return this.doctorService.findOne();
+  getProfile(@Request() req: any) {
+    return this.doctorService.findOne(req.user.userId);
   }
 
   @Patch('profile')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('DOCTOR')
-  updateProfile(@Body() body: Partial<CreateDoctorProfileDto>) {
-    return this.doctorService.update(body);
+  updateProfile(@Request() req: any, @Body() body: Partial<CreateDoctorProfileDto>) {
+    return this.doctorService.update(req.user.userId, body);
   }
 
   // Day 4 Discovery APIs

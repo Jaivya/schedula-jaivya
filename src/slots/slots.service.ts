@@ -3,18 +3,24 @@ import {
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 
 import { DoctorService } from '../doctor/doctor.service';
 import { AvailabilityService } from '../availability/availability.service';
+import { Appointment } from '../appointment/schemas/appointment.schema';
+import { AppointmentStatus } from '../appointment/appointment-status.enum';
 
 @Injectable()
 export class SlotsService {
   constructor(
     private readonly doctorService: DoctorService,
     private readonly availabilityService: AvailabilityService,
+    @InjectModel(Appointment.name)
+    private readonly appointmentModel: Model<Appointment>,
   ) {}
 
-  getDoctorSlots(
+  async getDoctorSlots(
     doctorId: number,
     date: string,
     duration: number,
@@ -64,6 +70,13 @@ export class SlotsService {
 
     const slots: any[] = [];
 
+    // Fetch booked appointments for this doctor and date
+    const bookedAppointments = await this.appointmentModel.find({
+      doctorId,
+      date,
+      status: AppointmentStatus.BOOKED,
+    });
+
     availability.forEach((slot: any) => {
       const start = this.toMinutes(
         slot.startTime,
@@ -78,12 +91,22 @@ export class SlotsService {
         current + duration <= end;
         current += duration
       ) {
-        slots.push({
-          startTime: this.toTime(current),
-          endTime: this.toTime(
-            current + duration,
-          ),
-        });
+        const slotStart = this.toTime(current);
+        const slotEnd = this.toTime(current + duration);
+
+        // Check if this specific slot is already booked
+        const isBooked = bookedAppointments.some(
+          (appt) =>
+            appt.startTime === slotStart &&
+            appt.endTime === slotEnd,
+        );
+
+        if (!isBooked) {
+          slots.push({
+            startTime: slotStart,
+            endTime: slotEnd,
+          });
+        }
       }
     });
 
@@ -93,6 +116,42 @@ export class SlotsService {
       totalSlots: slots.length,
       slots,
     };
+  }
+
+  isSlotInBaseAvailability(
+    doctorId: number,
+    date: string,
+    startTime: string,
+    endTime: string,
+  ): boolean {
+    const availability =
+      this.availabilityService.getAvailabilityByDate(
+        doctorId,
+        date,
+      );
+
+    if (
+      !availability ||
+      availability.length === 0
+    ) {
+      return false;
+    }
+
+    const slotStart = this.toMinutes(startTime);
+    const slotEnd = this.toMinutes(endTime);
+
+    return availability.some((window: any) => {
+      const winStart = this.toMinutes(
+        window.startTime,
+      );
+      const winEnd = this.toMinutes(
+        window.endTime,
+      );
+      return (
+        slotStart >= winStart &&
+        slotEnd <= winEnd
+      );
+    });
   }
 
   private toMinutes(time: string) {

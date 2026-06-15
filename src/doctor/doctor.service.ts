@@ -6,7 +6,7 @@ import {
 
 @Injectable()
 export class DoctorService {
-  private doctorProfile: any = {};
+  private doctorProfiles = new Map<number, any>();
 
   private doctors = [
     {
@@ -43,14 +43,14 @@ export class DoctorService {
     },
   ];
 
-  create(profile: any) {
-    if (Object.keys(this.doctorProfile).length > 0) {
+  create(userId: number, profile: any) {
+    if (this.doctorProfiles.has(userId)) {
       return {
         message: 'Doctor profile already exists',
       };
     }
 
-    this.doctorProfile = profile;
+    this.doctorProfiles.set(userId, profile);
 
     return {
       message: 'Doctor Profile Created',
@@ -58,31 +58,34 @@ export class DoctorService {
     };
   }
 
-  findOne() {
-    if (Object.keys(this.doctorProfile).length === 0) {
+  findOne(userId: number) {
+    const profile = this.doctorProfiles.get(userId);
+    if (!profile) {
       return {
         message: 'Doctor profile not found',
       };
     }
 
-    return this.doctorProfile;
+    return profile;
   }
 
-  update(profile: any) {
-    if (Object.keys(this.doctorProfile).length === 0) {
+  update(userId: number, profile: any) {
+    const existing = this.doctorProfiles.get(userId);
+    if (!existing) {
       return {
         message: 'Doctor profile not found',
       };
     }
 
-    this.doctorProfile = {
-      ...this.doctorProfile,
+    const updated = {
+      ...existing,
       ...profile,
     };
+    this.doctorProfiles.set(userId, updated);
 
     return {
       message: 'Doctor Profile Updated',
-      data: this.doctorProfile,
+      data: updated,
     };
   }
 
@@ -130,6 +133,14 @@ export class DoctorService {
   }
 
   findById(id: number) {
+    const dynamicProfile = this.doctorProfiles.get(id);
+    if (dynamicProfile) {
+      return {
+        id,
+        ...dynamicProfile,
+      };
+    }
+
     const doctor = this.doctors.find((d) => d.id === id);
 
     if (!doctor) {

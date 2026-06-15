@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
+import { MongooseModule } from '@nestjs/mongoose';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -8,19 +9,16 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 
-import { DoctorController } from './doctor/doctor.controller';
-import { DoctorService } from './doctor/doctor.service';
+import { DoctorModule } from './doctor/doctor.module';
 import { Doctor } from './doctor/entities/doctor.entity';
 
-import { PatientController } from './patient/patient.controller';
-import { PatientService } from './patient/patient.service';
+import { PatientModule } from './patient/patient.module';
 import { Patient } from './patient/entities/patient.entity';
 
 import { AvailabilityModule } from './availability/availability.module';
 import { Availability } from './availability/availability.entity';
 
 import { SlotsModule } from './slots/slots.module';
-
 import { AppointmentModule } from './appointment/appointment.module';
 
 @Module({
@@ -47,8 +45,28 @@ import { AppointmentModule } from './appointment/appointment.module';
       autoLoadEntities: true,
     }),
 
+    MongooseModule.forRootAsync({
+      useFactory: async () => {
+        let uri = process.env.MONGODB_URI;
+        if (!uri) {
+          try {
+            const { MongoMemoryServer } = require('mongodb-memory-server');
+            const mongo = await MongoMemoryServer.create();
+            uri = mongo.getUri();
+            console.log(`[Database] Started in-memory MongoDB at: ${uri}`);
+          } catch (error) {
+            console.error('[Database] Failed to start mongodb-memory-server, using default URI', error);
+            uri = 'mongodb://127.0.0.1:27017/appointments';
+          }
+        }
+        return { uri };
+      },
+    }),
+
     AuthModule,
     UsersModule,
+    DoctorModule,
+    PatientModule,
     AvailabilityModule,
     SlotsModule,
     AppointmentModule,
@@ -56,14 +74,10 @@ import { AppointmentModule } from './appointment/appointment.module';
 
   controllers: [
     AppController,
-    DoctorController,
-    PatientController,
   ],
 
   providers: [
     AppService,
-    DoctorService,
-    PatientService,
   ],
 })
 export class AppModule {}

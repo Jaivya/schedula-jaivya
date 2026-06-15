@@ -13,5 +13,6 @@ import { DoctorService } from '../doctor/doctor.service';
     SlotsService,
     DoctorService,
   ],
+  exports: [SlotsService], // IMPORTANT
 })
 export class SlotsModule {}

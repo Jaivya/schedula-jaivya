@@ -37,7 +37,7 @@ export class AvailabilityController {
     @Body() body: any,
   ) {
     return this.availabilityService.update(
-      Number(id),
+      id,
       body,
     );
   }
@@ -45,7 +45,7 @@ export class AvailabilityController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.availabilityService.remove(
-      Number(id),
+      id,
     );
   }
 

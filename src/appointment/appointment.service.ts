@@ -36,10 +36,10 @@ export class AppointmentService {
 
     const docId = Number(doctorId);
 
-    // 1. Doctor must exist
+    // Doctor must exist
     this.doctorService.findById(docId);
 
-    // 2. Appointment must be in the future
+    // Appointment must be in future
     const appointmentDateTime = new Date(
       `${date}T${startTime}:00`,
     );
@@ -50,9 +50,9 @@ export class AppointmentService {
       );
     }
 
-    // 3. Slot must exist in base availability
+    // Slot must exist
     const slotExists =
-      this.slotsService.isSlotInBaseAvailability(
+      await this.slotsService.isSlotInBaseAvailability(
         docId,
         date,
         startTime,
@@ -65,7 +65,7 @@ export class AppointmentService {
       );
     }
 
-    // 4. Same slot cannot be booked twice (must be available)
+    // Prevent duplicate booking
     const alreadyBooked =
       await this.appointmentModel.findOne({
         doctorId: docId,
@@ -81,7 +81,6 @@ export class AppointmentService {
       );
     }
 
-    // 5. Create and save appointment in MongoDB
     const appointment = new this.appointmentModel({
       doctorId: docId,
       patientId,
@@ -113,11 +112,13 @@ export class AppointmentService {
 
     const data = appointments.map((appt) => {
       let doctorDetails: any = null;
+
       try {
-        doctorDetails = this.doctorService.findById(appt.doctorId);
-      } catch (error) {
-        // ignore
-      }
+        doctorDetails =
+          this.doctorService.findById(
+            appt.doctorId,
+          );
+      } catch (error) {}
 
       return {
         id: appt._id.toString(),
@@ -133,17 +134,40 @@ export class AppointmentService {
 
     return {
       success: true,
-      message: 'Appointments retrieved successfully',
+      message:
+        'Appointments retrieved successfully',
       data,
     };
   }
 
-  async getDoctorAppointments(doctorId: number) {
-    const appointments = await this.appointmentModel
-      .find({ doctorId })
-      .exec();
+  async getDoctorAppointments(
+    doctorId: number,
+  ) {
+    console.log('==========================');
+    console.log(
+      'Doctor ID received:',
+      doctorId,
+    );
 
-    if (!appointments || appointments.length === 0) {
+    const appointments =
+      await this.appointmentModel
+        .find({ doctorId })
+        .exec();
+
+    console.log(
+      'Appointments found:',
+      appointments,
+    );
+    console.log(
+      'Total appointments:',
+      appointments.length,
+    );
+    console.log('==========================');
+
+    if (
+      !appointments ||
+      appointments.length === 0
+    ) {
       throw new NotFoundException(
         'No appointments found',
       );
@@ -151,15 +175,23 @@ export class AppointmentService {
 
     const data = appointments.map((appt) => {
       let patientDetails: any = null;
+
       try {
-        patientDetails = this.patientService.findById(appt.patientId);
+        patientDetails =
+          this.patientService.findById(
+            appt.patientId,
+          );
       } catch (error) {
-        // Fallback to user details if profile not created
-        const user = this.usersService.findById(appt.patientId);
+        const user =
+          this.usersService.findById(
+            appt.patientId,
+          );
+
         if (user) {
           patientDetails = {
             id: user.id,
-            fullName: user.email.split('@')[0],
+            fullName:
+              user.email.split('@')[0],
             contactDetails: user.email,
           };
         }
@@ -179,19 +211,26 @@ export class AppointmentService {
 
     return {
       success: true,
-      message: 'Appointments retrieved successfully',
+      message:
+        'Appointments retrieved successfully',
       data,
     };
   }
 
-  async cancelAppointment(patientId: number, id: string) {
+  async cancelAppointment(
+    patientId: number,
+    id: string,
+  ) {
     if (!isValidObjectId(id)) {
       throw new BadRequestException(
         'Invalid appointment ID',
       );
     }
 
-    const appointment = await this.appointmentModel.findById(id);
+    const appointment =
+      await this.appointmentModel.findById(
+        id,
+      );
 
     if (!appointment) {
       throw new NotFoundException(
@@ -199,8 +238,9 @@ export class AppointmentService {
       );
     }
 
-    // Only appointment owner (patient) can cancel
-    if (appointment.patientId !== patientId) {
+    if (
+      appointment.patientId !== patientId
+    ) {
       throw new ForbiddenException(
         'Only the appointment owner can cancel this appointment',
       );
@@ -215,11 +255,14 @@ export class AppointmentService {
       );
     }
 
-    const appointmentDateTime = new Date(
-      `${appointment.date}T${appointment.startTime}:00`,
-    );
+    const appointmentDateTime =
+      new Date(
+        `${appointment.date}T${appointment.startTime}:00`,
+      );
 
-    if (appointmentDateTime < new Date()) {
+    if (
+      appointmentDateTime < new Date()
+    ) {
       throw new BadRequestException(
         'Past appointment cannot be cancelled',
       );
@@ -228,11 +271,13 @@ export class AppointmentService {
     appointment.status =
       AppointmentStatus.CANCELLED;
 
-    const saved = await appointment.save();
+    const saved =
+      await appointment.save();
 
     return {
       success: true,
-      message: 'Appointment cancelled successfully',
+      message:
+        'Appointment cancelled successfully',
       data: saved,
     };
   }

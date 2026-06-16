@@ -49,7 +49,7 @@ export class SlotsService {
 
     // Get availability / override
     const availability =
-      this.availabilityService.getAvailabilityByDate(
+      await this.availabilityService.getAvailabilityByDate(
         doctorId,
         date,
       );
@@ -71,11 +71,12 @@ export class SlotsService {
     const slots: any[] = [];
 
     // Fetch booked appointments for this doctor and date
-    const bookedAppointments = await this.appointmentModel.find({
-      doctorId,
-      date,
-      status: AppointmentStatus.BOOKED,
-    });
+    const bookedAppointments =
+      await this.appointmentModel.find({
+        doctorId,
+        date,
+        status: AppointmentStatus.BOOKED,
+      });
 
     availability.forEach((slot: any) => {
       const start = this.toMinutes(
@@ -92,14 +93,16 @@ export class SlotsService {
         current += duration
       ) {
         const slotStart = this.toTime(current);
-        const slotEnd = this.toTime(current + duration);
-
-        // Check if this specific slot is already booked
-        const isBooked = bookedAppointments.some(
-          (appt) =>
-            appt.startTime === slotStart &&
-            appt.endTime === slotEnd,
+        const slotEnd = this.toTime(
+          current + duration,
         );
+
+        const isBooked =
+          bookedAppointments.some(
+            (appt) =>
+              appt.startTime === slotStart &&
+              appt.endTime === slotEnd,
+          );
 
         if (!isBooked) {
           slots.push({
@@ -118,14 +121,14 @@ export class SlotsService {
     };
   }
 
-  isSlotInBaseAvailability(
+  async isSlotInBaseAvailability(
     doctorId: number,
     date: string,
     startTime: string,
     endTime: string,
-  ): boolean {
+  ): Promise<boolean> {
     const availability =
-      this.availabilityService.getAvailabilityByDate(
+      await this.availabilityService.getAvailabilityByDate(
         doctorId,
         date,
       );
@@ -137,21 +140,29 @@ export class SlotsService {
       return false;
     }
 
-    const slotStart = this.toMinutes(startTime);
-    const slotEnd = this.toMinutes(endTime);
+    const slotStart =
+      this.toMinutes(startTime);
+    const slotEnd =
+      this.toMinutes(endTime);
 
-    return availability.some((window: any) => {
-      const winStart = this.toMinutes(
-        window.startTime,
-      );
-      const winEnd = this.toMinutes(
-        window.endTime,
-      );
-      return (
-        slotStart >= winStart &&
-        slotEnd <= winEnd
-      );
-    });
+    return availability.some(
+      (window: any) => {
+        const winStart =
+          this.toMinutes(
+            window.startTime,
+          );
+
+        const winEnd =
+          this.toMinutes(
+            window.endTime,
+          );
+
+        return (
+          slotStart >= winStart &&
+          slotEnd <= winEnd
+        );
+      },
+    );
   }
 
   private toMinutes(time: string) {

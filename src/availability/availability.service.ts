@@ -3,13 +3,30 @@ import {
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+
+import {
+  Availability,
+  AvailabilityDocument,
+} from './schemas/availability.schema';
+
+import {
+  AvailabilityOverride,
+  AvailabilityOverrideDocument,
+} from './schemas/availability-override.schema';
 
 @Injectable()
 export class AvailabilityService {
-  private availabilities: any[] = [];
-  private overrides: any[] = [];
+  constructor(
+    @InjectModel(Availability.name)
+    private readonly availabilityModel: Model<AvailabilityDocument>,
 
-  create(data: any) {
+    @InjectModel(AvailabilityOverride.name)
+    private readonly overrideModel: Model<AvailabilityOverrideDocument>,
+  ) {}
+
+  async create(data: any) {
     console.log('BODY RECEIVED:', data);
 
     if (!data) {
@@ -24,13 +41,11 @@ export class AvailabilityService {
       );
     }
 
-    const overlap = this.availabilities.find(
-      (slot) =>
-        slot.doctorId === data.doctorId &&
-        slot.dayOfWeek === data.dayOfWeek &&
-        data.startTime < slot.endTime &&
-        data.endTime > slot.startTime,
-    );
+    const overlap =
+      await this.availabilityModel.findOne({
+        doctorId: data.doctorId,
+        dayOfWeek: data.dayOfWeek,
+      });
 
     if (overlap) {
       throw new BadRequestException(
@@ -38,12 +53,8 @@ export class AvailabilityService {
       );
     }
 
-    const availability = {
-      id: Date.now(),
-      ...data,
-    };
-
-    this.availabilities.push(availability);
+    const availability =
+      await this.availabilityModel.create(data);
 
     return {
       message: 'Availability created successfully',
@@ -51,21 +62,27 @@ export class AvailabilityService {
     };
   }
 
-  findAll() {
+  async findAll() {
+    const data =
+      await this.availabilityModel.find();
+
     return {
       message: 'GET availability is working',
-      data: this.availabilities,
+      data,
     };
   }
 
-  findOverrides() {
-    return this.overrides;
+  async findOverrides() {
+    return await this.overrideModel.find();
   }
 
-  update(id: number, data: any) {
-    const availability = this.availabilities.find(
-      (slot) => slot.id === id,
-    );
+  async update(id: string, data: any) {
+    const availability =
+      await this.availabilityModel.findByIdAndUpdate(
+        id,
+        data,
+        { new: true },
+      );
 
     if (!availability) {
       throw new NotFoundException(
@@ -73,39 +90,32 @@ export class AvailabilityService {
       );
     }
 
-    Object.assign(availability, data);
-
     return {
       message: 'Availability updated',
       data: availability,
     };
   }
 
-  remove(id: number) {
-    const index = this.availabilities.findIndex(
-      (slot) => slot.id === id,
-    );
+  async remove(id: string) {
+    const availability =
+      await this.availabilityModel.findByIdAndDelete(
+        id,
+      );
 
-    if (index === -1) {
+    if (!availability) {
       throw new NotFoundException(
         'Availability not found',
       );
     }
-
-    this.availabilities.splice(index, 1);
 
     return {
       message: 'Availability deleted',
     };
   }
 
-  createOverride(data: any) {
-    const override = {
-      id: Date.now(),
-      ...data,
-    };
-
-    this.overrides.push(override);
+  async createOverride(data: any) {
+    const override =
+      await this.overrideModel.create(data);
 
     return {
       message: 'Override created successfully',
@@ -113,22 +123,22 @@ export class AvailabilityService {
     };
   }
 
-  getAvailabilityByDate(
+  async getAvailabilityByDate(
     doctorId: number,
     date: string,
   ) {
-    const override = this.overrides.filter(
-      (o) =>
-        o.doctorId === doctorId &&
-        o.date === date,
-    );
+    const override =
+      await this.overrideModel.find({
+        doctorId,
+        date,
+      });
 
     if (override.length > 0) {
       return override;
     }
 
-    return this.availabilities.filter(
-      (a) => a.doctorId === doctorId,
-    );
+    return await this.availabilityModel.find({
+      doctorId,
+    });
   }
 }

@@ -46,10 +46,8 @@ export class AppointmentController {
   @Get('doctor/appointments')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('DOCTOR')
-  getDoctorAppointments(@Request() req: any) {
-    return this.appointmentService.getDoctorAppointments(
-      req.user.userId,
-    );
+  getDoctorAppointments() {
+    return this.appointmentService.getDoctorAppointments(1);
   }
 
   @Patch('appointment/:id/cancel')

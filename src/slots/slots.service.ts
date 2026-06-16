@@ -41,23 +41,13 @@ export class SlotsService {
       );
     }
 
-    // Check doctor exists
-    const doctor =
-      this.doctorService.findById(doctorId);
+    this.doctorService.findById(doctorId);
 
-    console.log('DOCTOR:', doctor);
-
-    // Get availability / override
     const availability =
       await this.availabilityService.getAvailabilityByDate(
         doctorId,
         date,
       );
-
-    console.log(
-      'AVAILABILITY:',
-      availability,
-    );
 
     if (
       !availability ||
@@ -70,7 +60,6 @@ export class SlotsService {
 
     const slots: any[] = [];
 
-    // Fetch booked appointments for this doctor and date
     const bookedAppointments =
       await this.appointmentModel.find({
         doctorId,
@@ -87,29 +76,62 @@ export class SlotsService {
         slot.endTime,
       );
 
-      for (
-        let current = start;
-        current + duration <= end;
-        current += duration
-      ) {
-        const slotStart = this.toTime(current);
-        const slotEnd = this.toTime(
-          current + duration,
-        );
+      const schedulingType =
+        slot.schedulingType || 'STREAM';
 
-        const isBooked =
-          bookedAppointments.some(
-            (appt) =>
-              appt.startTime === slotStart &&
-              appt.endTime === slotEnd,
-          );
+      // STREAM SCHEDULING
+      if (schedulingType === 'STREAM') {
+        const slotDuration =
+          slot.slotDuration || duration;
 
-        if (!isBooked) {
-          slots.push({
-            startTime: slotStart,
-            endTime: slotEnd,
-          });
+        const buffer =
+          slot.bufferTime || 0;
+
+        for (
+          let current = start;
+          current + slotDuration <= end;
+          current += slotDuration + buffer
+        ) {
+          const slotStart =
+            this.toTime(current);
+
+          const slotEnd =
+            this.toTime(
+              current + slotDuration,
+            );
+
+          const isBooked =
+            bookedAppointments.some(
+              (appt) =>
+                appt.startTime === slotStart &&
+                appt.endTime === slotEnd,
+            );
+
+          if (!isBooked) {
+            slots.push({
+              type: 'STREAM',
+              startTime: slotStart,
+              endTime: slotEnd,
+            });
+          }
         }
+      }
+
+      // WAVE SCHEDULING
+      if (schedulingType === 'WAVE') {
+        const capacity =
+          slot.capacity || 0;
+
+        const bookedCount =
+          bookedAppointments.length;
+
+        slots.push({
+          type: 'WAVE',
+          window: `${slot.startTime}-${slot.endTime}`,
+          capacity,
+          available:
+            capacity - bookedCount,
+        });
       }
     });
 
@@ -142,6 +164,7 @@ export class SlotsService {
 
     const slotStart =
       this.toMinutes(startTime);
+
     const slotEnd =
       this.toMinutes(endTime);
 

@@ -35,10 +35,55 @@ export class AvailabilityService {
       );
     }
 
+    if (
+      !['STREAM', 'WAVE'].includes(
+        data.schedulingType,
+      )
+    ) {
+      throw new BadRequestException(
+        'Invalid scheduling type',
+      );
+    }
+
     if (data.startTime >= data.endTime) {
       throw new BadRequestException(
         'End time must be after start time',
       );
+    }
+
+    if (
+      data.schedulingType === 'STREAM'
+    ) {
+      if (
+        !data.slotDuration ||
+        data.slotDuration <= 0
+      ) {
+        throw new BadRequestException(
+          'Invalid slot duration',
+        );
+      }
+
+      if (
+        data.bufferTime !== undefined &&
+        data.bufferTime < 0
+      ) {
+        throw new BadRequestException(
+          'Invalid buffer time',
+        );
+      }
+    }
+
+    if (
+      data.schedulingType === 'WAVE'
+    ) {
+      if (
+        !data.capacity ||
+        data.capacity <= 0
+      ) {
+        throw new BadRequestException(
+          'Invalid capacity',
+        );
+      }
     }
 
     const overlap =
@@ -57,7 +102,8 @@ export class AvailabilityService {
       await this.availabilityModel.create(data);
 
     return {
-      message: 'Availability created successfully',
+      message:
+        'Availability created successfully',
       data: availability,
     };
   }
@@ -67,7 +113,8 @@ export class AvailabilityService {
       await this.availabilityModel.find();
 
     return {
-      message: 'GET availability is working',
+      message:
+        'GET availability is working',
       data,
     };
   }
@@ -118,7 +165,8 @@ export class AvailabilityService {
       await this.overrideModel.create(data);
 
     return {
-      message: 'Override created successfully',
+      message:
+        'Override created successfully',
       data: override,
     };
   }
@@ -134,11 +182,39 @@ export class AvailabilityService {
       });
 
     if (override.length > 0) {
+      console.log(
+        'OVERRIDE FOUND:',
+        override,
+      );
+
       return override;
     }
 
-    return await this.availabilityModel.find({
-      doctorId,
-    });
+    const dayOfWeek = new Date(date)
+      .toLocaleDateString('en-US', {
+        weekday: 'long',
+      })
+      .toUpperCase();
+
+    console.log('================');
+    console.log('DATE:', date);
+    console.log(
+      'DAY OF WEEK:',
+      dayOfWeek,
+    );
+
+    const result =
+      await this.availabilityModel.find({
+        doctorId,
+        dayOfWeek,
+      });
+
+    console.log(
+      'AVAILABILITY FOUND:',
+      result,
+    );
+    console.log('================');
+
+    return result;
   }
 }

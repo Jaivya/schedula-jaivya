@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, isValidObjectId } from 'mongoose';
+import { AvailabilityService } from '../availability/availability.service';
 
 import { DoctorService } from '../doctor/doctor.service';
 import { SlotsService } from '../slots/slots.service';
@@ -24,20 +25,78 @@ export class AppointmentService {
     private readonly slotsService: SlotsService,
     private readonly patientService: PatientService,
     private readonly usersService: UsersService,
+    private readonly availabilityService: AvailabilityService,
   ) {}
 
   async bookAppointment(patientId: number, body: any) {
     const {
-      doctorId,
+  doctorId,
+  date,
+  startTime,
+  endTime,
+  schedulingType,
+} = body;
+const docId = Number(doctorId);
+
+// Doctor must exist
+this.doctorService.findById(docId);
+
+if (schedulingType === 'WAVE') {
+  const availability =
+    await this.availabilityService.getAvailabilityByDate(
+      docId,
       date,
-      startTime,
-      endTime,
-    } = body;
+    );
 
-    const docId = Number(doctorId);
+  const wave: any = availability.find(
+  (slot: any) =>
+    slot.schedulingType === 'WAVE',
+);
 
-    // Doctor must exist
-    this.doctorService.findById(docId);
+  if (!wave) {
+    throw new BadRequestException(
+      'Wave not available',
+    );
+  }
+
+  const bookedCount =
+    await this.appointmentModel.countDocuments({
+      doctorId: docId,
+      date,
+      schedulingType: 'WAVE',
+      status: AppointmentStatus.BOOKED,
+    });
+
+  if (bookedCount >= wave.capacity) { 
+    throw new BadRequestException(
+      'Wave is full',
+    );
+  }
+
+  const tokenNumber =
+    bookedCount + 1;
+
+  const appointment =
+    await this.appointmentModel.create({
+      doctorId: docId,
+      patientId,
+      date,
+      schedulingType: 'WAVE',
+      tokenNumber,
+      startTime: wave.startTime,
+      endTime: wave.endTime,
+      status: AppointmentStatus.BOOKED,
+    });
+
+  return {
+    success: true,
+    message:
+      'Wave appointment booked successfully',
+    data: appointment,
+  };
+}
+
+   
 
     // Appointment must be in future
     const appointmentDateTime = new Date(
@@ -82,13 +141,14 @@ export class AppointmentService {
     }
 
     const appointment = new this.appointmentModel({
-      doctorId: docId,
-      patientId,
-      date,
-      startTime,
-      endTime,
-      status: AppointmentStatus.BOOKED,
-    });
+  doctorId: docId,
+  patientId,
+  date,
+  startTime,
+  endTime,
+  schedulingType,
+  status: AppointmentStatus.BOOKED,
+});
 
     const saved = await appointment.save();
 
@@ -121,15 +181,17 @@ export class AppointmentService {
       } catch (error) {}
 
       return {
-        id: appt._id.toString(),
-        doctorId: appt.doctorId,
-        patientId: appt.patientId,
-        date: appt.date,
-        startTime: appt.startTime,
-        endTime: appt.endTime,
-        status: appt.status,
-        doctorDetails,
-      };
+  id: appt._id.toString(),
+  doctorId: appt.doctorId,
+  patientId: appt.patientId,
+  date: appt.date,
+  startTime: appt.startTime,
+  endTime: appt.endTime,
+  schedulingType: appt.schedulingType,
+  tokenNumber: appt.tokenNumber,
+  status: appt.status,
+  doctorDetails,
+};
     });
 
     return {
@@ -196,17 +258,18 @@ export class AppointmentService {
           };
         }
       }
-
-      return {
-        id: appt._id.toString(),
-        doctorId: appt.doctorId,
-        patientId: appt.patientId,
-        date: appt.date,
-        startTime: appt.startTime,
-        endTime: appt.endTime,
-        status: appt.status,
-        patientDetails,
-      };
+return {
+  id: appt._id.toString(),
+  doctorId: appt.doctorId,
+  patientId: appt.patientId,
+  date: appt.date,
+  startTime: appt.startTime,
+  endTime: appt.endTime,
+  schedulingType: appt.schedulingType,
+  tokenNumber: appt.tokenNumber,
+  status: appt.status,
+  patientDetails,
+};
     });
 
     return {

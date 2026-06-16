@@ -45,23 +45,10 @@ import { AppointmentModule } from './appointment/appointment.module';
       autoLoadEntities: true,
     }),
 
-    MongooseModule.forRootAsync({
-      useFactory: async () => {
-        let uri = process.env.MONGODB_URI;
-        if (!uri) {
-          try {
-            const { MongoMemoryServer } = require('mongodb-memory-server');
-            const mongo = await MongoMemoryServer.create();
-            uri = mongo.getUri();
-            console.log(`[Database] Started in-memory MongoDB at: ${uri}`);
-          } catch (error) {
-            console.error('[Database] Failed to start mongodb-memory-server, using default URI', error);
-            uri = 'mongodb://127.0.0.1:27017/appointments';
-          }
-        }
-        return { uri };
-      },
-    }),
+    MongooseModule.forRoot(
+      process.env.MONGODB_URI ||
+        'mongodb://127.0.0.1:27017/appointments',
+    ),
 
     AuthModule,
     UsersModule,

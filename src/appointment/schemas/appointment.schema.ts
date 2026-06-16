@@ -33,11 +33,20 @@ export class Appointment extends Document {
   @Prop({ required: true })
   date!: string;
 
-  @Prop({ required: true })
-  startTime!: string;
+  @Prop()
+  startTime?: string;
 
-  @Prop({ required: true })
-  endTime!: string;
+  @Prop()
+  endTime?: string;
+
+  @Prop({
+    required: true,
+    enum: ['STREAM', 'WAVE'],
+  })
+  schedulingType!: string;
+
+  @Prop()
+  tokenNumber?: number;
 
   @Prop({
     type: String,
@@ -47,4 +56,7 @@ export class Appointment extends Document {
   status!: AppointmentStatus;
 }
 
-export const AppointmentSchema = SchemaFactory.createForClass(Appointment);
+export const AppointmentSchema =
+  SchemaFactory.createForClass(
+    Appointment,
+  );

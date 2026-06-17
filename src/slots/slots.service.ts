@@ -16,6 +16,7 @@ export class SlotsService {
   constructor(
     private readonly doctorService: DoctorService,
     private readonly availabilityService: AvailabilityService,
+
     @InjectModel(Appointment.name)
     private readonly appointmentModel: Model<Appointment>,
   ) {}
@@ -41,7 +42,9 @@ export class SlotsService {
       );
     }
 
-    this.doctorService.findById(doctorId);
+    await this.doctorService.findById(
+      doctorId,
+    );
 
     const availability =
       await this.availabilityService.getAvailabilityByDate(
@@ -64,76 +67,115 @@ export class SlotsService {
       await this.appointmentModel.find({
         doctorId,
         date,
-        status: AppointmentStatus.BOOKED,
+        status:
+          AppointmentStatus.BOOKED,
       });
 
-    availability.forEach((slot: any) => {
-      const start = this.toMinutes(
-        slot.startTime,
-      );
+    console.log('====================');
+    console.log(
+      'BOOKED APPOINTMENTS',
+    );
+    console.log(bookedAppointments);
+    console.log(
+      'COUNT:',
+      bookedAppointments.length,
+    );
+    console.log('====================');
 
-      const end = this.toMinutes(
-        slot.endTime,
-      );
+    availability.forEach(
+      (slot: any) => {
+        const start =
+          this.toMinutes(
+            slot.startTime,
+          );
 
-      const schedulingType =
-        slot.schedulingType || 'STREAM';
+        const end =
+          this.toMinutes(
+            slot.endTime,
+          );
 
-      // STREAM SCHEDULING
-      if (schedulingType === 'STREAM') {
-        const slotDuration =
-          slot.slotDuration || duration;
+        const schedulingType =
+          slot.schedulingType ||
+          'STREAM';
 
-        const buffer =
-          slot.bufferTime || 0;
-
-        for (
-          let current = start;
-          current + slotDuration <= end;
-          current += slotDuration + buffer
+        // STREAM
+        if (
+          schedulingType ===
+          'STREAM'
         ) {
-          const slotStart =
-            this.toTime(current);
+          const slotDuration =
+            slot.slotDuration ||
+            duration;
 
-          const slotEnd =
-            this.toTime(
-              current + slotDuration,
-            );
+          const buffer =
+            slot.bufferTime || 0;
 
-          const isBooked =
-            bookedAppointments.some(
-              (appt) =>
-                appt.startTime === slotStart &&
-                appt.endTime === slotEnd,
-            );
+          for (
+            let current = start;
+            current +
+              slotDuration <=
+            end;
+            current +=
+              slotDuration +
+              buffer
+          ) {
+            const slotStart =
+              this.toTime(
+                current,
+              );
 
-          if (!isBooked) {
-            slots.push({
-              type: 'STREAM',
-              startTime: slotStart,
-              endTime: slotEnd,
-            });
+            const slotEnd =
+              this.toTime(
+                current +
+                  slotDuration,
+              );
+
+            const isBooked =
+              bookedAppointments.some(
+                (appt) =>
+                  appt.startTime ===
+                    slotStart &&
+                  appt.endTime ===
+                    slotEnd,
+              );
+
+            if (!isBooked) {
+              slots.push({
+                type: 'STREAM',
+                startTime:
+                  slotStart,
+                endTime: slotEnd,
+              });
+            }
           }
         }
-      }
 
-      // WAVE SCHEDULING
-      if (schedulingType === 'WAVE') {
-        const capacity =
-          slot.capacity || 0;
+        // WAVE
+        if (
+          schedulingType ===
+          'WAVE'
+        ) {
+          const capacity =
+            slot.capacity || 0;
 
-        const bookedCount =
-          bookedAppointments.length;
+          const bookedCount =
+            bookedAppointments.filter(
+              (appt) =>
+                appt.schedulingType ===
+                'WAVE',
+            ).length;
 
-        slots.push({
-          type: 'WAVE',
-          window: `${slot.startTime}-${slot.endTime}`,
-          capacity,
-          available:
-            capacity - bookedCount,
-        });
-      }
-    });
+          slots.push({
+            type: 'WAVE',
+            window: `${slot.startTime}-${slot.endTime}`,
+            capacity,
+            available:
+              capacity -
+              bookedCount,
+          });
+        }
+      },
+    );
 
     return {
       doctorId,
@@ -181,14 +223,17 @@ export class SlotsService {
           );
 
         return (
-          slotStart >= winStart &&
+          slotStart >=
+            winStart &&
           slotEnd <= winEnd
         );
       },
     );
   }
 
-  private toMinutes(time: string) {
+  private toMinutes(
+    time: string,
+  ): number {
     const [h, m] = time
       .split(':')
       .map(Number);
@@ -196,12 +241,18 @@ export class SlotsService {
     return h * 60 + m;
   }
 
-  private toTime(minutes: number) {
-    const h = Math.floor(minutes / 60)
+  private toTime(
+    minutes: number,
+  ): string {
+    const h = Math.floor(
+      minutes / 60,
+    )
       .toString()
       .padStart(2, '0');
 
-    const m = (minutes % 60)
+    const m = (
+      minutes % 60
+    )
       .toString()
       .padStart(2, '0');
 

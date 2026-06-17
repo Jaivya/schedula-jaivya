@@ -11,6 +11,8 @@ import {
 
 import { AppointmentService } from './appointment.service';
 import { BookAppointmentDto } from './dto/book-appointment.dto';
+import { RescheduleAppointmentDto } from './dto/reschedule-appointment.dto';
+
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -60,6 +62,21 @@ export class AppointmentController {
     return this.appointmentService.cancelAppointment(
       req.user.userId,
       id,
+    );
+  }
+
+  @Patch('appointment/:id/reschedule')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('PATIENT')
+  rescheduleAppointment(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() body: RescheduleAppointmentDto,
+  ) {
+    return this.appointmentService.rescheduleAppointment(
+      req.user.userId,
+      id,
+      body,
     );
   }
 }

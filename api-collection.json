@@ -1,0 +1,104 @@
+{
+  "auth": [
+    {
+      "method": "POST",
+      "endpoint": "/auth/signup"
+    },
+    {
+      "method": "POST",
+      "endpoint": "/auth/login"
+    },
+    {
+      "method": "GET",
+      "endpoint": "/auth/users"
+    }
+  ],
+  "doctor": [
+    {
+      "method": "POST",
+      "endpoint": "/doctor/profile"
+    },
+    {
+      "method": "GET",
+      "endpoint": "/doctor/profile"
+    },
+    {
+      "method": "PATCH",
+      "endpoint": "/doctor/profile"
+    },
+    {
+      "method": "GET",
+      "endpoint": "/doctor"
+    },
+    {
+      "method": "GET",
+      "endpoint": "/doctor/details/:id"
+    }
+  ],
+  "patient": [
+    {
+      "method": "POST",
+      "endpoint": "/patient/profile"
+    },
+    {
+      "method": "GET",
+      "endpoint": "/patient/profile"
+    },
+    {
+      "method": "PATCH",
+      "endpoint": "/patient/profile"
+    }
+  ],
+  "availability": [
+    {
+      "method": "POST",
+      "endpoint": "/doctor/availability"
+    },
+    {
+      "method": "GET",
+      "endpoint": "/doctor/availability"
+    },
+    {
+      "method": "GET",
+      "endpoint": "/doctor/availability/overrides"
+    },
+    {
+      "method": "PATCH",
+      "endpoint": "/doctor/availability/:id"
+    },
+    {
+      "method": "DELETE",
+      "endpoint": "/doctor/availability/:id"
+    },
+    {
+      "method": "POST",
+      "endpoint": "/doctor/availability/override"
+    },
+    {
+      "method": "GET",
+      "endpoint": "/doctor/availability/:doctorId/date/:date"
+    }
+  ],
+  "appointments": [
+    {
+      "method": "POST",
+      "endpoint": "/appointment"
+    },
+    {
+      "method": "GET",
+      "endpoint": "/appointment/my"
+    },
+    {
+      "method": "GET",
+      "endpoint": "/doctor/appointments"
+    },
+    {
+      "method": "PATCH",
+      "endpoint": "/appointment/:id/cancel"
+    },
+    {
+      "method": "PATCH",
+      "endpoint": "/appointment/:id/reschedule"
+    }
+  ]
+}

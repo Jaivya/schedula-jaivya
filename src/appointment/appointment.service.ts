@@ -322,6 +322,16 @@ return {
       new Date(
         `${appointment.date}T${appointment.startTime}:00`,
       );
+      const diffMinutes =
+  (appointmentDateTime.getTime() -
+    new Date().getTime()) /
+  (1000 * 60);
+
+if (diffMinutes < 30) {
+  throw new BadRequestException(
+    'Cancel not allowed within 30 minutes of appointment',
+  );
+}
 
     if (
       appointmentDateTime < new Date()
@@ -343,5 +353,203 @@ return {
         'Appointment cancelled successfully',
       data: saved,
     };
+  
   }
+  async rescheduleAppointment(
+  patientId: number,
+  appointmentId: string,
+  body: any,
+) {
+  if (!isValidObjectId(appointmentId)) {
+    throw new BadRequestException(
+      'Invalid appointment ID',
+    );
+  }
+
+  const appointment =
+    await this.appointmentModel.findById(
+      appointmentId,
+    );
+
+  if (!appointment) {
+    throw new NotFoundException(
+      'Appointment not found',
+    );
+  }
+
+  console.log('====================');
+console.log('Appointment Patient ID:', appointment.patientId);
+console.log('Request Patient ID:', patientId);
+console.log('====================');
+
+if (
+  appointment.patientId !== patientId
+) {
+  throw new ForbiddenException(
+    'Only appointment owner can reschedule',
+  );
+}
+
+  if (
+    appointment.status ===
+    AppointmentStatus.CANCELLED
+  ) {
+    throw new BadRequestException(
+      'Cancelled appointment cannot be rescheduled',
+    );
+  }
+
+  const appointmentDateTime = new Date(
+    `${appointment.date}T${appointment.startTime}:00`,
+  );
+
+  const diffMinutes =
+    (appointmentDateTime.getTime() -
+      new Date().getTime()) /
+    (1000 * 60);
+
+  if (diffMinutes < 30) {
+    throw new BadRequestException(
+      'Reschedule not allowed within 30 minutes of appointment',
+    );
+  }
+
+  if (
+    appointment.date === body.date &&
+    appointment.startTime === body.startTime &&
+    appointment.endTime === body.endTime
+  ) {
+    throw new BadRequestException(
+      'Cannot reschedule to same slot',
+    );
+  }
+
+  const newAppointmentDateTime = new Date(
+    `${body.date}T${body.startTime}:00`,
+  );
+
+  if (
+    newAppointmentDateTime <= new Date()
+  ) {
+    throw new BadRequestException(
+      'Cannot reschedule to past date/time',
+    );
+  }
+
+  if (
+    body.schedulingType === 'STREAM'
+  ) {
+    const slotExists =
+      await this.slotsService.isSlotInBaseAvailability(
+        Number(body.doctorId),
+        body.date,
+        body.startTime,
+        body.endTime,
+      );
+
+    if (!slotExists) {
+  let availableSlots =
+    await this.slotsService.getDoctorSlots(
+      Number(body.doctorId),
+      body.date,
+      15,
+    );
+
+  let suggestedSlot =
+    availableSlots.slots[0] || null;
+
+  if (!suggestedSlot) {
+    const nextDate = new Date(
+      body.date,
+    );
+
+    nextDate.setDate(
+      nextDate.getDate() + 1,
+    );
+
+    const nextDateString =
+      nextDate
+        .toISOString()
+        .split('T')[0];
+
+    try {
+      const nextDaySlots =
+        await this.slotsService.getDoctorSlots(
+          Number(body.doctorId),
+          nextDateString,
+          15,
+        );
+
+      suggestedSlot =
+        nextDaySlots.slots[0] || null;
+    } catch (error) {}
+  }
+  console.log('INSIDE SLOT EXISTS CHECK');
+console.log('suggestion code reached');
+console.log('SUGGESTED SLOT:', suggestedSlot);
+
+  throw new BadRequestException({
+  success: false,
+  message:
+    'Requested slot unavailable',
+  suggestedSlot,
+});
+}
+}
+
+    const alreadyBooked =
+      await this.appointmentModel.findOne({
+        doctorId: body.doctorId,
+        date: body.date,
+        startTime: body.startTime,
+        endTime: body.endTime,
+        status: AppointmentStatus.BOOKED,
+      });
+
+   if (
+  alreadyBooked &&
+  alreadyBooked._id.toString() !==
+    appointmentId
+) {
+  const availableSlots =
+    await this.slotsService.getDoctorSlots(
+      Number(body.doctorId),
+      body.date,
+      15,
+    );
+throw new BadRequestException({
+  success: false,
+  message:
+    'Requested slot already booked',
+  suggestedSlot:
+    availableSlots.slots[0] || null,
+});
+} 
+  
+
+  appointment.doctorId =
+    Number(body.doctorId);
+
+  appointment.date =
+    body.date;
+
+  appointment.startTime =
+    body.startTime;
+
+  appointment.endTime =
+    body.endTime;
+
+  appointment.schedulingType =
+    body.schedulingType;
+
+  const saved =
+    await appointment.save();
+
+  return {
+    success: true,
+    message:
+      'Appointment rescheduled successfully',
+    data: saved,
+  };
+}
 }

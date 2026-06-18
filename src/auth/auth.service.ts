@@ -13,6 +13,16 @@ export class AuthService {
   ) {}
 
   signup(signupDto: SignupDto) {
+    const existingUser = this.usersService.findByEmail(
+      signupDto.email,
+    );
+
+    if (existingUser) {
+      return {
+        message: 'User already exists',
+      };
+    }
+
     const user = {
       id: Date.now(),
       email: signupDto.email,
@@ -29,9 +39,14 @@ export class AuthService {
   }
 
   login(loginDto: LoginDto) {
-    const user = this.usersService.findByEmail(loginDto.email);
+    const user = this.usersService.findByEmail(
+      loginDto.email,
+    );
 
-    if (!user || user.password !== loginDto.password) {
+    if (
+      !user ||
+      user.password !== loginDto.password
+    ) {
       return {
         message: 'Invalid credentials',
       };
@@ -45,7 +60,12 @@ export class AuthService {
 
     return {
       message: 'Login successful',
-      access_token: this.jwtService.sign(payload),
+      access_token:
+        this.jwtService.sign(payload),
     };
+  }
+
+  getUsers() {
+    return this.usersService.findAll();
   }
 }

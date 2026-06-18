@@ -448,19 +448,53 @@ if (
       );
 
     if (!slotExists) {
-  const availableSlots =
+  let availableSlots =
     await this.slotsService.getDoctorSlots(
       Number(body.doctorId),
       body.date,
       15,
     );
 
+  let suggestedSlot =
+    availableSlots.slots[0] || null;
+
+  if (!suggestedSlot) {
+    const nextDate = new Date(
+      body.date,
+    );
+
+    nextDate.setDate(
+      nextDate.getDate() + 1,
+    );
+
+    const nextDateString =
+      nextDate
+        .toISOString()
+        .split('T')[0];
+
+    try {
+      const nextDaySlots =
+        await this.slotsService.getDoctorSlots(
+          Number(body.doctorId),
+          nextDateString,
+          15,
+        );
+
+      suggestedSlot =
+        nextDaySlots.slots[0] || null;
+    } catch (error) {}
+  }
+  console.log('INSIDE SLOT EXISTS CHECK');
+console.log('suggestion code reached');
+console.log('SUGGESTED SLOT:', suggestedSlot);
+
   throw new BadRequestException({
-    message:
-      'Requested slot unavailable',
-    suggestedSlot:
-      availableSlots.slots[0] || null,
-  });
+  success: false,
+  message:
+    'Requested slot unavailable',
+  suggestedSlot,
+});
+}
 }
 
     const alreadyBooked =
@@ -483,19 +517,15 @@ if (
       body.date,
       15,
     );
-
-  throw new BadRequestException({
-    message:
-      'Requested slot already booked',
-    suggestedSlot:
-      availableSlots.slots[0] || null,
-  });
-} {
-      throw new BadRequestException(
-        'Requested slot already booked',
-      );
-    }
-  }
+throw new BadRequestException({
+  success: false,
+  message:
+    'Requested slot already booked',
+  suggestedSlot:
+    availableSlots.slots[0] || null,
+});
+} 
+  
 
   appointment.doctorId =
     Number(body.doctorId);

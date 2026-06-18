@@ -1,17 +1,20 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class PatientService {
-  private patientProfile: any = {};
+  constructor(private readonly usersService: UsersService) {}
 
-  create(profile: any) {
-    if (Object.keys(this.patientProfile).length > 0) {
+  private patientProfiles = new Map<number, any>();
+
+  create(userId: number, profile: any) {
+    if (this.patientProfiles.has(userId)) {
       return {
         message: 'Patient profile already exists',
       };
     }
 
-    this.patientProfile = profile;
+    this.patientProfiles.set(userId, profile);
 
     return {
       message: 'Patient Profile Created',
@@ -19,31 +22,56 @@ export class PatientService {
     };
   }
 
-  findOne() {
-    if (Object.keys(this.patientProfile).length === 0) {
+  findOne(userId: number) {
+    const profile = this.patientProfiles.get(userId);
+    if (!profile) {
       return {
         message: 'Patient profile not found',
       };
     }
 
-    return this.patientProfile;
+    return profile;
   }
 
-  update(profile: any) {
-    if (Object.keys(this.patientProfile).length === 0) {
+  update(userId: number, profile: any) {
+    const existing = this.patientProfiles.get(userId);
+    if (!existing) {
       return {
         message: 'Patient profile not found',
       };
     }
 
-    this.patientProfile = {
-      ...this.patientProfile,
+    const updated = {
+      ...existing,
       ...profile,
     };
+    this.patientProfiles.set(userId, updated);
 
     return {
       message: 'Patient Profile Updated',
-      data: this.patientProfile,
+      data: updated,
     };
+  }
+
+  findById(id: number) {
+    const patientProfile = this.patientProfiles.get(id);
+    if (patientProfile) {
+      return {
+        id,
+        ...patientProfile,
+      };
+    }
+
+    // Fallback to user details if profile not created yet
+    const user = this.usersService.findById(id);
+    if (user && user.role === 'PATIENT') {
+      return {
+        id: user.id,
+        fullName: user.email.split('@')[0],
+        contactDetails: user.email,
+      };
+    }
+
+    throw new NotFoundException('Patient not found');
   }
 }

@@ -3,18 +3,24 @@ import {
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 
 import { DoctorService } from '../doctor/doctor.service';
 import { AvailabilityService } from '../availability/availability.service';
+import { Appointment } from '../appointment/schemas/appointment.schema';
+import { AppointmentStatus } from '../appointment/appointment-status.enum';
 
 @Injectable()
 export class SlotsService {
   constructor(
     private readonly doctorService: DoctorService,
     private readonly availabilityService: AvailabilityService,
+    @InjectModel(Appointment.name)
+    private readonly appointmentModel: Model<Appointment>,
   ) {}
 
-  getDoctorSlots(
+  async getDoctorSlots(
     doctorId: number,
     date: string,
     duration: number,
@@ -35,23 +41,13 @@ export class SlotsService {
       );
     }
 
-    // Check doctor exists
-    const doctor =
-      this.doctorService.findById(doctorId);
+    this.doctorService.findById(doctorId);
 
-    console.log('DOCTOR:', doctor);
-
-    // Get availability / override
     const availability =
-      this.availabilityService.getAvailabilityByDate(
+      await this.availabilityService.getAvailabilityByDate(
         doctorId,
         date,
       );
-
-    console.log(
-      'AVAILABILITY:',
-      availability,
-    );
 
     if (
       !availability ||
@@ -64,6 +60,13 @@ export class SlotsService {
 
     const slots: any[] = [];
 
+    const bookedAppointments =
+      await this.appointmentModel.find({
+        doctorId,
+        date,
+        status: AppointmentStatus.BOOKED,
+      });
+
     availability.forEach((slot: any) => {
       const start = this.toMinutes(
         slot.startTime,
@@ -73,16 +76,61 @@ export class SlotsService {
         slot.endTime,
       );
 
-      for (
-        let current = start;
-        current + duration <= end;
-        current += duration
-      ) {
+      const schedulingType =
+        slot.schedulingType || 'STREAM';
+
+      // STREAM SCHEDULING
+      if (schedulingType === 'STREAM') {
+        const slotDuration =
+          slot.slotDuration || duration;
+
+        const buffer =
+          slot.bufferTime || 0;
+
+        for (
+          let current = start;
+          current + slotDuration <= end;
+          current += slotDuration + buffer
+        ) {
+          const slotStart =
+            this.toTime(current);
+
+          const slotEnd =
+            this.toTime(
+              current + slotDuration,
+            );
+
+          const isBooked =
+            bookedAppointments.some(
+              (appt) =>
+                appt.startTime === slotStart &&
+                appt.endTime === slotEnd,
+            );
+
+          if (!isBooked) {
+            slots.push({
+              type: 'STREAM',
+              startTime: slotStart,
+              endTime: slotEnd,
+            });
+          }
+        }
+      }
+
+      // WAVE SCHEDULING
+      if (schedulingType === 'WAVE') {
+        const capacity =
+          slot.capacity || 0;
+
+        const bookedCount =
+          bookedAppointments.length;
+
         slots.push({
-          startTime: this.toTime(current),
-          endTime: this.toTime(
-            current + duration,
-          ),
+          type: 'WAVE',
+          window: `${slot.startTime}-${slot.endTime}`,
+          capacity,
+          available:
+            capacity - bookedCount,
         });
       }
     });
@@ -93,6 +141,51 @@ export class SlotsService {
       totalSlots: slots.length,
       slots,
     };
+  }
+
+  async isSlotInBaseAvailability(
+    doctorId: number,
+    date: string,
+    startTime: string,
+    endTime: string,
+  ): Promise<boolean> {
+    const availability =
+      await this.availabilityService.getAvailabilityByDate(
+        doctorId,
+        date,
+      );
+
+    if (
+      !availability ||
+      availability.length === 0
+    ) {
+      return false;
+    }
+
+    const slotStart =
+      this.toMinutes(startTime);
+
+    const slotEnd =
+      this.toMinutes(endTime);
+
+    return availability.some(
+      (window: any) => {
+        const winStart =
+          this.toMinutes(
+            window.startTime,
+          );
+
+        const winEnd =
+          this.toMinutes(
+            window.endTime,
+          );
+
+        return (
+          slotStart >= winStart &&
+          slotEnd <= winEnd
+        );
+      },
+    );
   }
 
   private toMinutes(time: string) {

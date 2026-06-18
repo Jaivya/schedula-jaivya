@@ -14,6 +14,10 @@ export class UsersService {
     return this.users.find((user) => user.email === email);
   }
 
+  findById(id: number) {
+    return this.users.find((user) => user.id === id);
+  }
+
   findAll() {
     return this.users;
   }

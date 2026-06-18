@@ -14,12 +14,12 @@ export class SlotsController {
   ) {}
 
   @Get(':doctorId/slots')
-  getDoctorSlots(
+  async getDoctorSlots(
     @Param('doctorId') doctorId: string,
     @Query('date') date: string,
     @Query('duration') duration: string,
   ) {
-    return this.slotsService.getDoctorSlots(
+    return await this.slotsService.getDoctorSlots(
       Number(doctorId),
       date,
       Number(duration || 15),

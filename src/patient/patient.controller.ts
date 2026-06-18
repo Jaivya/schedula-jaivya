@@ -5,6 +5,7 @@ import {
   Patch,
   Post,
   UseGuards,
+  Request,
 } from '@nestjs/common';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -21,21 +22,21 @@ export class PatientController {
   @Post('profile')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('PATIENT')
-  createProfile(@Body() body: CreatePatientProfileDto) {
-    return this.patientService.create(body);
+  createProfile(@Request() req: any, @Body() body: CreatePatientProfileDto) {
+    return this.patientService.create(req.user.userId, body);
   }
 
   @Get('profile')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('PATIENT')
-  getProfile() {
-    return this.patientService.findOne();
+  getProfile(@Request() req: any) {
+    return this.patientService.findOne(req.user.userId);
   }
 
   @Patch('profile')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('PATIENT')
-  updateProfile(@Body() body: Partial<CreatePatientProfileDto>) {
-    return this.patientService.update(body);
+  updateProfile(@Request() req: any, @Body() body: Partial<CreatePatientProfileDto>) {
+    return this.patientService.update(req.user.userId, body);
   }
 }

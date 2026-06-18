@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
+import { MongooseModule } from '@nestjs/mongoose';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -8,17 +9,17 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 
-import { DoctorController } from './doctor/doctor.controller';
-import { DoctorService } from './doctor/doctor.service';
+import { DoctorModule } from './doctor/doctor.module';
 import { Doctor } from './doctor/entities/doctor.entity';
 
-import { PatientController } from './patient/patient.controller';
-import { PatientService } from './patient/patient.service';
+import { PatientModule } from './patient/patient.module';
 import { Patient } from './patient/entities/patient.entity';
 
 import { AvailabilityModule } from './availability/availability.module';
 import { Availability } from './availability/availability.entity';
+
 import { SlotsModule } from './slots/slots.module';
+import { AppointmentModule } from './appointment/appointment.module';
 
 @Module({
   imports: [
@@ -44,22 +45,26 @@ import { SlotsModule } from './slots/slots.module';
       autoLoadEntities: true,
     }),
 
+    MongooseModule.forRoot(
+      process.env.MONGODB_URI ||
+        'mongodb://127.0.0.1:27017/appointments',
+    ),
+
     AuthModule,
     UsersModule,
+    DoctorModule,
+    PatientModule,
     AvailabilityModule,
     SlotsModule,
+    AppointmentModule,
   ],
 
   controllers: [
     AppController,
-    DoctorController,
-    PatientController,
   ],
 
   providers: [
     AppService,
-    DoctorService,
-    PatientService,
   ],
 })
 export class AppModule {}

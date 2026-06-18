@@ -10,16 +10,23 @@ export class AvailabilityService {
   private overrides: any[] = [];
 
   create(data: any) {
-    // Invalid time validation
+    console.log('BODY RECEIVED:', data);
+
+    if (!data) {
+      throw new BadRequestException(
+        'Request body is missing',
+      );
+    }
+
     if (data.startTime >= data.endTime) {
       throw new BadRequestException(
         'End time must be after start time',
       );
     }
 
-    // Overlap validation
     const overlap = this.availabilities.find(
       (slot) =>
+        slot.doctorId === data.doctorId &&
         slot.dayOfWeek === data.dayOfWeek &&
         data.startTime < slot.endTime &&
         data.endTime > slot.startTime,
@@ -49,6 +56,10 @@ export class AvailabilityService {
       message: 'GET availability is working',
       data: this.availabilities,
     };
+  }
+
+  findOverrides() {
+    return this.overrides;
   }
 
   update(id: number, data: any) {
@@ -102,15 +113,22 @@ export class AvailabilityService {
     };
   }
 
-  getAvailabilityByDate(date: string) {
+  getAvailabilityByDate(
+    doctorId: number,
+    date: string,
+  ) {
     const override = this.overrides.filter(
-      (o) => o.date === date,
+      (o) =>
+        o.doctorId === doctorId &&
+        o.date === date,
     );
 
     if (override.length > 0) {
       return override;
     }
 
-    return this.availabilities;
+    return this.availabilities.filter(
+      (a) => a.doctorId === doctorId,
+    );
   }
 }

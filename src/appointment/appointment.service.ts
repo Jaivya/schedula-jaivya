@@ -39,7 +39,10 @@ export class AppointmentService {
 const docId = Number(doctorId);
 
 // Doctor must exist
-this.doctorService.findById(docId);
+await this.doctorService.findById(
+  docId,
+);
+
 
 if (schedulingType === 'WAVE') {
   const availability =
@@ -203,18 +206,38 @@ if (schedulingType === 'WAVE') {
   }
 
   async getDoctorAppointments(
-    doctorId: number,
-  ) {
+  doctorId: number,
+  date?: string,
+) {
+  await this.doctorService.findById(
+  doctorId,
+);
+if (
+  date &&
+  !/^\d{4}-\d{2}-\d{2}$/.test(date)
+) {
+  throw new BadRequestException(
+    'Invalid date filter',
+  );
+}
     console.log('==========================');
     console.log(
       'Doctor ID received:',
       doctorId,
     );
+const filter: any = {
+  doctorId,
+  status: AppointmentStatus.BOOKED,
+};
 
-    const appointments =
-      await this.appointmentModel
-        .find({ doctorId })
-        .exec();
+if (date) {
+  filter.date = date;
+}
+
+const appointments =
+  await this.appointmentModel
+    .find(filter)
+    .exec();
 
     console.log(
       'Appointments found:',
@@ -284,6 +307,8 @@ return {
     patientId: number,
     id: string,
   ) {
+    
+
     if (!isValidObjectId(id)) {
       throw new BadRequestException(
         'Invalid appointment ID',
@@ -355,6 +380,58 @@ if (diffMinutes < 30) {
     };
   
   }
+  async cancelDoctorAppointment(
+  doctorId: number,
+  id: string,
+) {
+  await this.doctorService.findById(
+    doctorId,
+  );
+  if (!isValidObjectId(id)) {
+    throw new BadRequestException(
+      'Invalid appointment ID',
+    );
+  }
+
+  const appointment =
+    await this.appointmentModel.findById(id);
+
+  if (!appointment) {
+    throw new NotFoundException(
+      'Appointment not found',
+    );
+  }
+
+  if (
+    appointment.doctorId !== doctorId
+  ) {
+    throw new ForbiddenException(
+      'You can only cancel your own appointments',
+    );
+  }
+
+  if (
+    appointment.status ===
+    AppointmentStatus.CANCELLED
+  ) {
+    throw new BadRequestException(
+      'Appointment already cancelled',
+    );
+  }
+
+  appointment.status =
+    AppointmentStatus.CANCELLED;
+
+  const saved =
+    await appointment.save();
+
+  return {
+    success: true,
+    message:
+      'Appointment cancelled successfully',
+    data: saved,
+  };
+}
   async rescheduleAppointment(
   patientId: number,
   appointmentId: string,

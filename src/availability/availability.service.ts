@@ -225,63 +225,83 @@ export class AvailabilityService {
   }
 
   async getNextAvailable(
-    doctorId: number,
-  ) {
-    if (!doctorId) {
-      throw new BadRequestException(
-        'Invalid doctor ID',
-      );
-    }
-
-    // FIX: Doctor must exist
-    await this.doctorService.findById(
-      doctorId,
-    );
-
-    const today = new Date();
-
-    for (let i = 0; i < 30; i++) {
-      const currentDate = new Date(today);
-
-      currentDate.setDate(
-        today.getDate() + i,
-      );
-
-      const date =
-        currentDate
-          .toISOString()
-          .split('T')[0];
-
-      try {
-        const slots =
-          await this.slotsService.getDoctorSlots(
-            doctorId,
-            date,
-            15,
-          );
-
-        if (
-          slots.slots &&
-          slots.slots.length > 0
-        ) {
-          return {
-            success: true,
-            message:
-              'Next available appointment found',
-            nextAvailableDate:
-              date,
-            totalSlots:
-              slots.totalSlots,
-            slots: slots.slots,
-          };
-        }
-      } catch (error) {
-        continue;
-      }
-    }
-
-    throw new NotFoundException(
-      'No appointments available in the next 30 working days. Please try again later.',
+  doctorId: number,
+) {
+  if (!doctorId || isNaN(doctorId)) {
+    throw new BadRequestException(
+      'Invalid doctor ID',
     );
   }
+
+  // Doctor must exist
+  await this.doctorService.findById(
+    doctorId,
+  );
+
+  const today = new Date();
+
+  for (let i = 0; i < 30; i++) {
+    const currentDate = new Date(today);
+
+    currentDate.setDate(
+      today.getDate() + i,
+    );
+
+    const date =
+      currentDate
+        .toISOString()
+        .split('T')[0];
+
+    // Check if doctor is on leave
+    const leaveOverride =
+      await this.overrideModel.findOne({
+        doctorId,
+        date,
+        startTime: '00:00',
+        endTime: '00:00',
+      });
+
+    if (leaveOverride) {
+      console.log(
+        `Doctor on leave for ${date}`,
+      );
+      continue;
+    }
+
+    try {
+      const slots =
+        await this.slotsService.getDoctorSlots(
+          doctorId,
+          date,
+          15,
+        );
+
+      if (
+        slots &&
+        slots.slots &&
+        slots.slots.length > 0
+      ) {
+        return {
+          success: true,
+          message:
+            'Next available appointment found',
+          nextAvailableDate:
+            date,
+          totalSlots:
+            slots.totalSlots,
+          slots: slots.slots,
+        };
+      }
+    } catch (error) {
+      console.log(
+  `Skipping ${date}`,
+);
+      continue;
+    }
+  }
+
+  throw new NotFoundException(
+    'No appointments available in the next 30 working days. Please try again later.',
+  );
+}
 }

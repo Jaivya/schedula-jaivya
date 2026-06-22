@@ -66,4 +66,13 @@ export class AvailabilityController {
       date,
     );
   }
+
+  @Get(':doctorId/next-available')
+  getNextAvailable(
+    @Param('doctorId') doctorId: string,
+  ) {
+    return this.availabilityService.getNextAvailable(
+      Number(doctorId),
+    );
+  }
 }

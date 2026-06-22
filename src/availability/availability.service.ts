@@ -16,6 +16,9 @@ import {
   AvailabilityOverrideDocument,
 } from './schemas/availability-override.schema';
 
+import { SlotsService } from '../slots/slots.service';
+import { DoctorService } from '../doctor/doctor.service';
+
 @Injectable()
 export class AvailabilityService {
   constructor(
@@ -24,6 +27,9 @@ export class AvailabilityService {
 
     @InjectModel(AvailabilityOverride.name)
     private readonly overrideModel: Model<AvailabilityOverrideDocument>,
+
+    private readonly slotsService: SlotsService,
+    private readonly doctorService: DoctorService,
   ) {}
 
   async create(data: any) {
@@ -216,5 +222,66 @@ export class AvailabilityService {
     console.log('================');
 
     return result;
+  }
+
+  async getNextAvailable(
+    doctorId: number,
+  ) {
+    if (!doctorId) {
+      throw new BadRequestException(
+        'Invalid doctor ID',
+      );
+    }
+
+    // FIX: Doctor must exist
+    await this.doctorService.findById(
+      doctorId,
+    );
+
+    const today = new Date();
+
+    for (let i = 0; i < 30; i++) {
+      const currentDate = new Date(today);
+
+      currentDate.setDate(
+        today.getDate() + i,
+      );
+
+      const date =
+        currentDate
+          .toISOString()
+          .split('T')[0];
+
+      try {
+        const slots =
+          await this.slotsService.getDoctorSlots(
+            doctorId,
+            date,
+            15,
+          );
+
+        if (
+          slots.slots &&
+          slots.slots.length > 0
+        ) {
+          return {
+            success: true,
+            message:
+              'Next available appointment found',
+            nextAvailableDate:
+              date,
+            totalSlots:
+              slots.totalSlots,
+            slots: slots.slots,
+          };
+        }
+      } catch (error) {
+        continue;
+      }
+    }
+
+    throw new NotFoundException(
+      'No appointments available in the next 30 working days. Please try again later.',
+    );
   }
 }

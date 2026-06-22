@@ -7,6 +7,8 @@ import {
   Body,
   UseGuards,
   Request,
+  Query,
+  BadRequestException,
 } from '@nestjs/common';
 
 import { AppointmentService } from './appointment.service';
@@ -48,8 +50,37 @@ export class AppointmentController {
   @Get('doctor/appointments')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('DOCTOR')
-  getDoctorAppointments() {
-    return this.appointmentService.getDoctorAppointments(1);
+  getDoctorAppointments(
+    @Request() req: any,
+    @Query('date') date?: string,
+  ) {
+    if (date) {
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+
+      if (!dateRegex.test(date)) {
+        throw new BadRequestException(
+          'Invalid date filter',
+        );
+      }
+    }
+
+    return this.appointmentService.getDoctorAppointments(
+      req.user.userId,
+      date,
+    );
+  }
+
+  @Patch('doctor/appointments/:id/cancel')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('DOCTOR')
+  cancelDoctorAppointment(
+    @Request() req: any,
+    @Param('id') id: string,
+  ) {
+    return this.appointmentService.cancelDoctorAppointment(
+      req.user.userId,
+      id,
+    );
   }
 
   @Patch('appointment/:id/cancel')

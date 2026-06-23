@@ -80,6 +80,7 @@ export class SlotsService {
         status:
           AppointmentStatus.BOOKED,
       });
+      
     availability.forEach(
       (slot: any) => {
         const start =

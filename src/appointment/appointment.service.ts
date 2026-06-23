@@ -7,6 +7,8 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, isValidObjectId } from 'mongoose';
 import { AvailabilityService } from '../availability/availability.service';
+import { NotificationService } from '../notification/notification.service';
+import { NotificationType } from '../notification/notification-type.enum';
 
 import { DoctorService } from '../doctor/doctor.service';
 import { SlotsService } from '../slots/slots.service';
@@ -26,6 +28,7 @@ export class AppointmentService {
     private readonly patientService: PatientService,
     private readonly usersService: UsersService,
     private readonly availabilityService: AvailabilityService,
+private readonly notificationService: NotificationService,
   ) {}
 
   async bookAppointment(patientId: number, body: any) {
@@ -80,23 +83,32 @@ if (schedulingType === 'WAVE') {
     bookedCount + 1;
 
   const appointment =
-    await this.appointmentModel.create({
-      doctorId: docId,
-      patientId,
-      date,
-      schedulingType: 'WAVE',
-      tokenNumber,
-      startTime: wave.startTime,
-      endTime: wave.endTime,
-      status: AppointmentStatus.BOOKED,
-    });
+  await this.appointmentModel.create({
+    doctorId: docId,
+    patientId,
+    date,
+    schedulingType: 'WAVE',
+    tokenNumber,
+    startTime: wave.startTime,
+    endTime: wave.endTime,
+    status: AppointmentStatus.BOOKED,
+  });
+  console.log('CREATING NOTIFICATION', patientId);
 
-  return {
-    success: true,
-    message:
-      'Wave appointment booked successfully',
-    data: appointment,
-  };
+await this.notificationService.createNotification(
+  
+  patientId.toString(),
+  'Appointment Booked',
+  `Your appointment on ${date} has been booked successfully. Token Number: ${tokenNumber}`,
+  NotificationType.APPOINTMENT_BOOKED,
+);
+
+return {
+  success: true,
+  message:
+    'Wave appointment booked successfully',
+  data: appointment,
+};
 }
 
    
@@ -153,13 +165,21 @@ if (schedulingType === 'WAVE') {
   status: AppointmentStatus.BOOKED,
 });
 
-    const saved = await appointment.save();
+  const saved = await appointment.save();
+  console.log('CREATING NOTIFICATION', patientId);
 
-    return {
-      success: true,
-      message: 'Appointment booked successfully',
-      data: saved,
-    };
+await this.notificationService.createNotification(
+  patientId.toString(),
+  'Appointment Booked',
+  `Your appointment on ${date} at ${startTime} has been booked successfully`,
+  NotificationType.APPOINTMENT_BOOKED,
+);
+
+return {
+  success: true,
+  message: 'Appointment booked successfully',
+  data: saved,
+};
   }
 
   async getPatientAppointments(patientId: number) {
@@ -288,82 +308,88 @@ return {
   }
 
   async cancelAppointment(
-    patientId: number,
-    id: string,
-  ) {
-    
-
-    if (!isValidObjectId(id)) {
-      throw new BadRequestException(
-        'Invalid appointment ID',
-      );
-    }
-
-    const appointment =
-      await this.appointmentModel.findById(
-        id,
-      );
-
-    if (!appointment) {
-      throw new NotFoundException(
-        'Appointment not found',
-      );
-    }
-
-    if (
-      appointment.patientId !== patientId
-    ) {
-      throw new ForbiddenException(
-        'Only the appointment owner can cancel this appointment',
-      );
-    }
-
-    if (
-      appointment.status ===
-      AppointmentStatus.CANCELLED
-    ) {
-      throw new BadRequestException(
-        'Appointment already cancelled',
-      );
-    }
-
-    const appointmentDateTime =
-      new Date(
-        `${appointment.date}T${appointment.startTime}:00`,
-      );
-      const diffMinutes =
-  (appointmentDateTime.getTime() -
-    new Date().getTime()) /
-  (1000 * 60);
-
-if (diffMinutes < 30) {
-  throw new BadRequestException(
-    'Cancel not allowed within 30 minutes of appointment',
-  );
-}
-
-    if (
-      appointmentDateTime < new Date()
-    ) {
-      throw new BadRequestException(
-        'Past appointment cannot be cancelled',
-      );
-    }
-
-    appointment.status =
-      AppointmentStatus.CANCELLED;
-
-    const saved =
-      await appointment.save();
-
-    return {
-      success: true,
-      message:
-        'Appointment cancelled successfully',
-      data: saved,
-    };
-  
+  patientId: number,
+  id: string,
+) {
+  if (!isValidObjectId(id)) {
+    throw new BadRequestException(
+      'Invalid appointment ID',
+    );
   }
+
+  const appointment =
+    await this.appointmentModel.findById(
+      id,
+    );
+
+  if (!appointment) {
+    throw new NotFoundException(
+      'Appointment not found',
+    );
+  }
+
+  if (
+    appointment.patientId !== patientId
+  ) {
+    throw new ForbiddenException(
+      'Only the appointment owner can cancel this appointment',
+    );
+  }
+
+  if (
+    appointment.status ===
+    AppointmentStatus.CANCELLED
+  ) {
+    throw new BadRequestException(
+      'Appointment already cancelled',
+    );
+  }
+
+  const appointmentDateTime =
+    new Date(
+      `${appointment.date}T${appointment.startTime}:00`,
+    );
+
+  const diffMinutes =
+    (appointmentDateTime.getTime() -
+      new Date().getTime()) /
+    (1000 * 60);
+
+  if (diffMinutes < 30) {
+    throw new BadRequestException(
+      'Cancel not allowed within 30 minutes of appointment',
+    );
+  }
+
+  if (
+    appointmentDateTime < new Date()
+  ) {
+    throw new BadRequestException(
+      'Past appointment cannot be cancelled',
+    );
+  }
+
+  appointment.status =
+    AppointmentStatus.CANCELLED;
+
+  const saved =
+    await appointment.save();
+    console.log('CREATING NOTIFICATION', patientId);
+
+  await this.notificationService.createNotification(
+    patientId.toString(),
+    'Appointment Cancelled',
+    `Your appointment on ${appointment.date} has been cancelled`,
+    NotificationType.APPOINTMENT_CANCELLED,
+  );
+
+  return {
+    success: true,
+    message:
+      'Appointment cancelled successfully',
+    data: saved,
+  };
+}
   async cancelDoctorAppointment(
   doctorId: number,
   id: string,
@@ -597,6 +623,13 @@ throw new BadRequestException({
 
   const saved =
     await appointment.save();
+    console.log('CREATING NOTIFICATION', patientId);
+    await this.notificationService.createNotification(
+  patientId.toString(),
+  'Appointment Rescheduled',
+  `Your appointment has been rescheduled to ${body.date} at ${body.startTime}`,
+  NotificationType.APPOINTMENT_RESCHEDULED,
+);
 
   return {
     success: true,

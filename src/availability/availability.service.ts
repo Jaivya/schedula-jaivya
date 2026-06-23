@@ -33,7 +33,6 @@ export class AvailabilityService {
   ) {}
 
   async create(data: any) {
-    console.log('BODY RECEIVED:', data);
 
     if (!data) {
       throw new BadRequestException(
@@ -188,10 +187,6 @@ export class AvailabilityService {
       });
 
     if (override.length > 0) {
-      console.log(
-        'OVERRIDE FOUND:',
-        override,
-      );
 
       return override;
     }
@@ -202,12 +197,7 @@ export class AvailabilityService {
       })
       .toUpperCase();
 
-    console.log('================');
-    console.log('DATE:', date);
-    console.log(
-      'DAY OF WEEK:',
-      dayOfWeek,
-    );
+   
 
     const result =
       await this.availabilityModel.find({
@@ -215,44 +205,47 @@ export class AvailabilityService {
         dayOfWeek,
       });
 
-    console.log(
-      'AVAILABILITY FOUND:',
-      result,
-    );
-    console.log('================');
 
     return result;
   }
 
-  async getNextAvailable(
+async getNextAvailable(
   doctorId: number,
 ) {
-  if (!doctorId || isNaN(doctorId)) {
+  if (
+    !doctorId ||
+    isNaN(doctorId)
+  ) {
     throw new BadRequestException(
       'Invalid doctor ID',
     );
   }
 
-  // Doctor must exist
   await this.doctorService.findById(
     doctorId,
   );
 
   const today = new Date();
 
-  for (let i = 0; i < 30; i++) {
-    const currentDate = new Date(today);
+  let currentDate =
+    new Date(today);
 
-    currentDate.setDate(
-      today.getDate() + i,
-    );
+  let workingDaysChecked = 0;
 
+  while (
+    workingDaysChecked < 30
+  ) {
     const date =
       currentDate
         .toISOString()
         .split('T')[0];
 
-    // Check if doctor is on leave
+    const availability =
+      await this.getAvailabilityByDate(
+        doctorId,
+        date,
+      );
+
     const leaveOverride =
       await this.overrideModel.findOne({
         doctorId,
@@ -261,14 +254,43 @@ export class AvailabilityService {
         endTime: '00:00',
       });
 
+    // Skip leave days
     if (leaveOverride) {
-      console.log(
-        `Doctor on leave for ${date}`,
+      currentDate.setDate(
+        currentDate.getDate() + 1,
       );
       continue;
     }
 
+    // Skip non-working days
+    if (
+      !availability ||
+      availability.length === 0
+    ) {
+      currentDate.setDate(
+        currentDate.getDate() + 1,
+      );
+      continue;
+    }
+    // Count only working days
+    workingDaysChecked++;   
+    const firstAvailability =
+  availability[0] as any;
+
+const schedulingType =
+  firstAvailability.schedulingType;
+
+if (
+  schedulingType !== 'STREAM' &&
+  schedulingType !== 'WAVE'
+) {
+  currentDate.setDate(
+    currentDate.getDate() + 1,
+  );
+  continue;
+}
     try {
+      // Supports both STREAM and WAVE scheduling
       const slots =
         await this.slotsService.getDoctorSlots(
           doctorId,
@@ -292,12 +314,13 @@ export class AvailabilityService {
           slots: slots.slots,
         };
       }
-    } catch (error) {
-      console.log(
-  `Skipping ${date}`,
-);
-      continue;
+    } catch {
+      // continue searching
     }
+
+    currentDate.setDate(
+      currentDate.getDate() + 1,
+    );
   }
 
   throw new NotFoundException(

@@ -80,18 +80,6 @@ export class SlotsService {
         status:
           AppointmentStatus.BOOKED,
       });
-
-    console.log('====================');
-    console.log(
-      'BOOKED APPOINTMENTS',
-    );
-    console.log(bookedAppointments);
-    console.log(
-      'COUNT:',
-      bookedAppointments.length,
-    );
-    console.log('====================');
-
     availability.forEach(
       (slot: any) => {
         const start =

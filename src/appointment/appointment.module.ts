@@ -3,6 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 
 import { AppointmentController } from './appointment.controller';
 import { AppointmentService } from './appointment.service';
+import { NotificationModule } from '../notification/notification.module';
 import {
   Appointment,
   AppointmentSchema,
@@ -21,6 +22,7 @@ import { AvailabilityModule } from '../availability/availability.module';
     PatientModule,
     UsersModule,
     AvailabilityModule,
+    NotificationModule,
 
     MongooseModule.forFeature([
       {

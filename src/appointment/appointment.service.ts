@@ -220,11 +220,7 @@ if (
     'Invalid date filter',
   );
 }
-    console.log('==========================');
-    console.log(
-      'Doctor ID received:',
-      doctorId,
-    );
+     
 const filter: any = {
   doctorId,
   status: AppointmentStatus.BOOKED,
@@ -238,17 +234,6 @@ const appointments =
   await this.appointmentModel
     .find(filter)
     .exec();
-
-    console.log(
-      'Appointments found:',
-      appointments,
-    );
-    console.log(
-      'Total appointments:',
-      appointments.length,
-    );
-    console.log('==========================');
-
     if (
       !appointments ||
       appointments.length === 0
@@ -256,8 +241,7 @@ const appointments =
       throw new NotFoundException(
         'No appointments found',
       );
-    }
-
+    } 
     const data = appointments.map((appt) => {
       let patientDetails: any = null;
 
@@ -454,10 +438,6 @@ if (diffMinutes < 30) {
     );
   }
 
-  console.log('====================');
-console.log('Appointment Patient ID:', appointment.patientId);
-console.log('Request Patient ID:', patientId);
-console.log('====================');
 
 if (
   appointment.patientId !== patientId
@@ -561,10 +541,6 @@ if (
         nextDaySlots.slots[0] || null;
     } catch (error) {}
   }
-  console.log('INSIDE SLOT EXISTS CHECK');
-console.log('suggestion code reached');
-console.log('SUGGESTED SLOT:', suggestedSlot);
-
   throw new BadRequestException({
   success: false,
   message:

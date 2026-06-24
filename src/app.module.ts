@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { Notification } from './notification/notification.entity';
+import { NotificationModule } from './notification/notification.module';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -39,9 +41,10 @@ import { AppointmentModule } from './appointment/appointment.module';
         Doctor,
         Patient,
         Availability,
+         Notification,
       ],
 
-      synchronize: false,
+      synchronize: true,
       autoLoadEntities: true,
     }),
 
@@ -57,6 +60,7 @@ import { AppointmentModule } from './appointment/appointment.module';
     AvailabilityModule,
     SlotsModule,
     AppointmentModule,
+    NotificationModule,
   ],
 
   controllers: [

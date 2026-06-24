@@ -2,12 +2,16 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
+
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 
 import { DoctorService } from '../doctor/doctor.service';
 import { AvailabilityService } from '../availability/availability.service';
+
 import { Appointment } from '../appointment/schemas/appointment.schema';
 import { AppointmentStatus } from '../appointment/appointment-status.enum';
 
@@ -15,6 +19,12 @@ import { AppointmentStatus } from '../appointment/appointment-status.enum';
 export class SlotsService {
   constructor(
     private readonly doctorService: DoctorService,
+
+    @Inject(
+      forwardRef(
+        () => AvailabilityService,
+      ),
+    )
     private readonly availabilityService: AvailabilityService,
 
     @InjectModel(Appointment.name)
@@ -70,18 +80,7 @@ export class SlotsService {
         status:
           AppointmentStatus.BOOKED,
       });
-
-    console.log('====================');
-    console.log(
-      'BOOKED APPOINTMENTS',
-    );
-    console.log(bookedAppointments);
-    console.log(
-      'COUNT:',
-      bookedAppointments.length,
-    );
-    console.log('====================');
-
+      
     availability.forEach(
       (slot: any) => {
         const start =

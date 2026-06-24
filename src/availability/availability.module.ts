@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 
 import { AvailabilityController } from './availability.controller';
@@ -14,8 +14,15 @@ import {
   AvailabilityOverrideSchema,
 } from './schemas/availability-override.schema';
 
+import { SlotsModule } from '../slots/slots.module';
+import { DoctorModule } from '../doctor/doctor.module';
+
 @Module({
   imports: [
+    forwardRef(() => SlotsModule),
+
+    DoctorModule,
+
     MongooseModule.forFeature([
       {
         name: Availability.name,
@@ -27,8 +34,11 @@ import {
       },
     ]),
   ],
+
   controllers: [AvailabilityController],
+
   providers: [AvailabilityService],
+
   exports: [AvailabilityService],
 })
 export class AvailabilityModule {}

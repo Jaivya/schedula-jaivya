@@ -434,6 +434,12 @@ return {
 
   const saved =
     await appointment.save();
+    await this.notificationService.createNotification(
+  appointment.patientId.toString(),
+  'Appointment Cancelled',
+  `Your appointment on ${appointment.date} has been cancelled`,
+  NotificationType.APPOINTMENT_CANCELLED,
+);
 
   return {
     success: true,

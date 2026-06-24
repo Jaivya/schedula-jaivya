@@ -16,14 +16,29 @@ export class NotificationService {
     private readonly notificationRepository: Repository<Notification>,
   ) {}
 
- async createNotification(
+async createNotification(
   patientId: string,
   title: string,
   message: string,
   type: NotificationType,
 ) {
-  console.log('NOTIFICATION SERVICE HIT');
-  console.log('PATIENT ID:', patientId);
+  const existingNotification =
+    await this.notificationRepository.findOne({
+      where: {
+        patientId,
+        title,
+        message,
+        type,
+        isRead: false,
+      },
+      order: {
+        createdAt: 'DESC',
+      },
+    });
+
+  if (existingNotification) {
+    return existingNotification;
+  }
 
   const notification =
     this.notificationRepository.create({
@@ -34,17 +49,9 @@ export class NotificationService {
       isRead: false,
     });
 
-  console.log('BEFORE SAVE');
-
-  const saved =
-    await this.notificationRepository.save(
-      notification,
-    );
-
-  console.log('AFTER SAVE');
-  console.log(saved);
-
-  return saved;
+  return await this.notificationRepository.save(
+    notification,
+  );
 }
 
   async findAll(

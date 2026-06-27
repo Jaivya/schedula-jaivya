@@ -16,6 +16,9 @@ import {
   AvailabilityOverrideDocument,
 } from './schemas/availability-override.schema';
 
+import { SlotsService } from '../slots/slots.service';
+import { DoctorService } from '../doctor/doctor.service';
+
 @Injectable()
 export class AvailabilityService {
   constructor(
@@ -24,10 +27,12 @@ export class AvailabilityService {
 
     @InjectModel(AvailabilityOverride.name)
     private readonly overrideModel: Model<AvailabilityOverrideDocument>,
+
+    private readonly slotsService: SlotsService,
+    private readonly doctorService: DoctorService,
   ) {}
 
   async create(data: any) {
-    console.log('BODY RECEIVED:', data);
 
     if (!data) {
       throw new BadRequestException(
@@ -182,10 +187,6 @@ export class AvailabilityService {
       });
 
     if (override.length > 0) {
-      console.log(
-        'OVERRIDE FOUND:',
-        override,
-      );
 
       return override;
     }
@@ -196,12 +197,7 @@ export class AvailabilityService {
       })
       .toUpperCase();
 
-    console.log('================');
-    console.log('DATE:', date);
-    console.log(
-      'DAY OF WEEK:',
-      dayOfWeek,
-    );
+   
 
     const result =
       await this.availabilityModel.find({
@@ -209,12 +205,126 @@ export class AvailabilityService {
         dayOfWeek,
       });
 
-    console.log(
-      'AVAILABILITY FOUND:',
-      result,
-    );
-    console.log('================');
 
     return result;
   }
+
+async getNextAvailable(
+  doctorId: number,
+) {
+  if (
+    !doctorId ||
+    isNaN(doctorId)
+  ) {
+    throw new BadRequestException(
+      'Invalid doctor ID',
+    );
+  }
+
+  await this.doctorService.findById(
+    doctorId,
+  );
+
+  const today = new Date();
+
+  let currentDate =
+    new Date(today);
+
+  let workingDaysChecked = 0;
+
+  while (
+    workingDaysChecked < 30
+  ) {
+    const date =
+      currentDate
+        .toISOString()
+        .split('T')[0];
+
+    const availability =
+      await this.getAvailabilityByDate(
+        doctorId,
+        date,
+      );
+
+    const leaveOverride =
+      await this.overrideModel.findOne({
+        doctorId,
+        date,
+        startTime: '00:00',
+        endTime: '00:00',
+      });
+
+    // Skip leave days
+    if (leaveOverride) {
+      currentDate.setDate(
+        currentDate.getDate() + 1,
+      );
+      continue;
+    }
+
+    // Skip non-working days
+    if (
+      !availability ||
+      availability.length === 0
+    ) {
+      currentDate.setDate(
+        currentDate.getDate() + 1,
+      );
+      continue;
+    }
+    // Count only working days
+    workingDaysChecked++;   
+    const firstAvailability =
+  availability[0] as any;
+
+const schedulingType =
+  firstAvailability.schedulingType;
+
+if (
+  schedulingType !== 'STREAM' &&
+  schedulingType !== 'WAVE'
+) {
+  currentDate.setDate(
+    currentDate.getDate() + 1,
+  );
+  continue;
+}
+    try {
+      // Supports both STREAM and WAVE scheduling
+      const slots =
+        await this.slotsService.getDoctorSlots(
+          doctorId,
+          date,
+          15,
+        );
+
+      if (
+        slots &&
+        slots.slots &&
+        slots.slots.length > 0
+      ) {
+        return {
+          success: true,
+          message:
+            'Next available appointment found',
+          nextAvailableDate:
+            date,
+          totalSlots:
+            slots.totalSlots,
+          slots: slots.slots,
+        };
+      }
+    } catch {
+      // continue searching
+    }
+
+    currentDate.setDate(
+      currentDate.getDate() + 1,
+    );
+  }
+
+  throw new NotFoundException(
+    'No appointments available in the next 30 working days. Please try again later.',
+  );
+}
 }

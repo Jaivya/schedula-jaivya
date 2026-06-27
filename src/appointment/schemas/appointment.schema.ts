@@ -54,6 +54,11 @@ export class Appointment extends Document {
     default: AppointmentStatus.BOOKED,
   })
   status!: AppointmentStatus;
+
+  @Prop({
+    default: false,
+  })
+  reminderSent!: boolean;
 }
 
 export const AppointmentSchema =

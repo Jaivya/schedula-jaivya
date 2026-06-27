@@ -94,11 +94,33 @@
     },
     {
       "method": "PATCH",
+      "endpoint": "/doctor/appointments/:id/cancel"
+    },
+    {
+      "method": "PATCH",
       "endpoint": "/appointment/:id/cancel"
     },
     {
       "method": "PATCH",
       "endpoint": "/appointment/:id/reschedule"
+    }
+  ],
+  "notifications": [
+    {
+      "method": "GET",
+      "endpoint": "/notifications"
+    },
+    {
+      "method": "GET",
+      "endpoint": "/notifications/unread-count"
+    },
+    {
+      "method": "PATCH",
+      "endpoint": "/notifications/:id/read"
+    },
+    {
+      "method": "PATCH",
+      "endpoint": "/notifications/read-all"
     }
   ]
 }

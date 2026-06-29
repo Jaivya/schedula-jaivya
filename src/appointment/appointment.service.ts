@@ -113,16 +113,36 @@ return {
 
    
 
-    // Appointment must be in future
-    const appointmentDateTime = new Date(
-      `${date}T${startTime}:00`,
-    );
+    // Booking allowed only for today
 
-    if (appointmentDateTime <= new Date()) {
-      throw new BadRequestException(
-        'Appointment must be booked for a future date and time',
-      );
-    }
+const appointmentDate = new Date(date);
+
+if (isNaN(appointmentDate.getTime())) {
+  throw new BadRequestException(
+    'Invalid appointment date',
+  );
+}
+
+const today = new Date();
+
+appointmentDate.setHours(0, 0, 0, 0);
+today.setHours(0, 0, 0, 0);
+
+if (appointmentDate.getTime() !== today.getTime()) {
+  throw new BadRequestException(
+    'Appointments can only be booked for today',
+  );
+}
+
+const appointmentDateTime = new Date(
+  `${date}T${startTime}:00`,
+);
+
+if (appointmentDateTime <= new Date()) {
+  throw new BadRequestException(
+    'Appointment time must be in the future',
+  );
+}
 
     // Slot must exist
     const slotExists =

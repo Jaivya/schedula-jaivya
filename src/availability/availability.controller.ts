@@ -6,9 +6,15 @@ import {
   Delete,
   Param,
   Body,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
 
 import { AvailabilityService } from './availability.service';
+
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 
 @Controller('doctor/availability')
 export class AvailabilityController {
@@ -17,7 +23,14 @@ export class AvailabilityController {
   ) {}
 
   @Post()
-  create(@Body() body: any) {
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('DOCTOR')
+  create(
+    @Request() req: any,
+    @Body() body: any,
+  ) {
+    body.doctorId = req.user.userId;
+
     return this.availabilityService.create(body);
   }
 
@@ -43,14 +56,18 @@ export class AvailabilityController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  remove(
+    @Param('id') id: string,
+  ) {
     return this.availabilityService.remove(
       id,
     );
   }
 
   @Post('override')
-  createOverride(@Body() body: any) {
+  createOverride(
+    @Body() body: any,
+  ) {
     return this.availabilityService.createOverride(
       body,
     );

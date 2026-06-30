@@ -36,9 +36,7 @@ export class SlotsService {
     date: string,
     duration: number,
   ) {
-    console.log('DOCTOR ID:', doctorId);
-    console.log('DATE:', date);
-    console.log('DURATION:', duration);
+  
 
     if (!date) {
       throw new BadRequestException(

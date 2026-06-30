@@ -20,11 +20,7 @@ export class NotificationController {
 
   @Get()
   getNotifications(@Req() req: any) {
-    console.log(
-      'CONTROLLER USER ID:',
-      req.user.userId,
-    );
-
+   
     return this.notificationService.findAll(
       req.user.userId.toString(),
     );

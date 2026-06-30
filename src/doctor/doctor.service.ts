@@ -133,20 +133,22 @@ export class DoctorService {
   }
 
   findById(id: number) {
-    const dynamicProfile = this.doctorProfiles.get(id);
-    if (dynamicProfile) {
-      return {
-        id,
-        ...dynamicProfile,
-      };
-    }
 
-    const doctor = this.doctors.find((d) => d.id === id);
+  const dynamicProfile = this.doctorProfiles.get(id);
 
-    if (!doctor) {
-      throw new NotFoundException('Doctor not found');
-    }
-
-    return doctor;
+  if (dynamicProfile) {
+    return {
+      id,
+      ...dynamicProfile,
+    };
   }
+
+  const doctor = this.doctors.find((d) => d.id === id);
+
+  if (!doctor) {
+    throw new NotFoundException('Doctor not found');
+  }
+
+  return doctor;
+}
 }

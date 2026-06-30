@@ -93,7 +93,7 @@ if (schedulingType === 'WAVE') {
     endTime: wave.endTime,
     status: AppointmentStatus.BOOKED,
   });
-  console.log('CREATING NOTIFICATION', patientId);
+ 
 
 await this.notificationService.createNotification(
   
@@ -113,16 +113,36 @@ return {
 
    
 
-    // Appointment must be in future
-    const appointmentDateTime = new Date(
-      `${date}T${startTime}:00`,
-    );
+    // Booking allowed only for today
 
-    if (appointmentDateTime <= new Date()) {
-      throw new BadRequestException(
-        'Appointment must be booked for a future date and time',
-      );
-    }
+const appointmentDate = new Date(date);
+
+if (isNaN(appointmentDate.getTime())) {
+  throw new BadRequestException(
+    'Invalid appointment date',
+  );
+}
+
+const today = new Date();
+
+appointmentDate.setHours(0, 0, 0, 0);
+today.setHours(0, 0, 0, 0);
+
+if (appointmentDate.getTime() !== today.getTime()) {
+  throw new BadRequestException(
+    'Appointments can only be booked for today',
+  );
+}
+
+const appointmentDateTime = new Date(
+  `${date}T${startTime}:00`,
+);
+
+if (appointmentDateTime <= new Date()) {
+  throw new BadRequestException(
+    'Appointment time must be in the future',
+  );
+}
 
     // Slot must exist
     const slotExists =
@@ -166,7 +186,7 @@ return {
 });
 
   const saved = await appointment.save();
-  console.log('CREATING NOTIFICATION', patientId);
+
 
 await this.notificationService.createNotification(
   patientId.toString(),
@@ -345,6 +365,7 @@ return {
     );
   }
 
+  
   const appointmentDateTime =
     new Date(
       `${appointment.date}T${appointment.startTime}:00`,
@@ -374,7 +395,7 @@ return {
 
   const saved =
     await appointment.save();
-    console.log('CREATING NOTIFICATION', patientId);
+  
 
   await this.notificationService.createNotification(
     patientId.toString(),
@@ -488,20 +509,9 @@ if (
     );
   }
 
-  const appointmentDateTime = new Date(
-    `${appointment.date}T${appointment.startTime}:00`,
-  );
 
-  const diffMinutes =
-    (appointmentDateTime.getTime() -
-      new Date().getTime()) /
-    (1000 * 60);
 
-  if (diffMinutes < 30) {
-    throw new BadRequestException(
-      'Reschedule not allowed within 30 minutes of appointment',
-    );
-  }
+  
 
   if (
     appointment.date === body.date &&
@@ -629,7 +639,7 @@ throw new BadRequestException({
 
   const saved =
     await appointment.save();
-    console.log('CREATING NOTIFICATION', patientId);
+   
     await this.notificationService.createNotification(
   patientId.toString(),
   'Appointment Rescheduled',

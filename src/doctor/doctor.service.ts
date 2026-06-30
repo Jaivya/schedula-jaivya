@@ -133,11 +133,6 @@ export class DoctorService {
   }
 
   findById(id: number) {
-  console.log('==============================');
-  console.log('Searching Doctor ID:', id);
-  console.log('Doctor Profiles Map:', this.doctorProfiles);
-  console.log('Profile:', this.doctorProfiles.get(id));
-  console.log('==============================');
 
   const dynamicProfile = this.doctorProfiles.get(id);
 

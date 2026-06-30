@@ -93,7 +93,7 @@ if (schedulingType === 'WAVE') {
     endTime: wave.endTime,
     status: AppointmentStatus.BOOKED,
   });
-  console.log('CREATING NOTIFICATION', patientId);
+ 
 
 await this.notificationService.createNotification(
   
@@ -186,7 +186,7 @@ if (appointmentDateTime <= new Date()) {
 });
 
   const saved = await appointment.save();
-  console.log('CREATING NOTIFICATION', patientId);
+
 
 await this.notificationService.createNotification(
   patientId.toString(),
@@ -365,6 +365,7 @@ return {
     );
   }
 
+  
   const appointmentDateTime =
     new Date(
       `${appointment.date}T${appointment.startTime}:00`,
@@ -394,7 +395,7 @@ return {
 
   const saved =
     await appointment.save();
-    console.log('CREATING NOTIFICATION', patientId);
+  
 
   await this.notificationService.createNotification(
     patientId.toString(),
@@ -508,20 +509,9 @@ if (
     );
   }
 
-  const appointmentDateTime = new Date(
-    `${appointment.date}T${appointment.startTime}:00`,
-  );
 
-  const diffMinutes =
-    (appointmentDateTime.getTime() -
-      new Date().getTime()) /
-    (1000 * 60);
 
-  if (diffMinutes < 30) {
-    throw new BadRequestException(
-      'Reschedule not allowed within 30 minutes of appointment',
-    );
-  }
+  
 
   if (
     appointment.date === body.date &&
@@ -649,7 +639,7 @@ throw new BadRequestException({
 
   const saved =
     await appointment.save();
-    console.log('CREATING NOTIFICATION', patientId);
+   
     await this.notificationService.createNotification(
   patientId.toString(),
   'Appointment Rescheduled',

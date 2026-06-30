@@ -24,7 +24,7 @@ export class ReminderService {
 
   @Cron('* * * * *')
   async sendAppointmentReminders() {
-    console.log('Cron Job Running...', new Date());
+  
     const now = new Date();
 
     const oneHourLater = new Date(
@@ -82,9 +82,6 @@ export class ReminderService {
 
         await appointment.save();
 
-        console.log(
-          `Reminder sent for appointment ${appointment.id}`,
-        );
       } catch (error) {
         console.error(error);
       }

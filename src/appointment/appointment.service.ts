@@ -133,6 +133,54 @@ if (appointmentDate.getTime() !== today.getTime()) {
     'Appointments can only be booked for today',
   );
 }
+// Booking window validation
+const availability =
+  await this.availabilityService.getAvailabilityByDate(
+    docId,
+    date,
+  );
+
+if (!availability || availability.length === 0) {
+  throw new BadRequestException(
+    'Doctor unavailable today',
+  );
+}
+
+const consultation = availability[0] as any;
+
+const consultationStart = new Date(
+  `${date}T${consultation.startTime}:00`,
+);
+
+const consultationEnd = new Date(
+  `${date}T${consultation.endTime}:00`,
+);
+
+// Booking opens 2 hours before consultation starts
+const bookingOpen = new Date(consultationStart);
+bookingOpen.setHours(
+  bookingOpen.getHours() - 2,
+);
+
+// Booking closes 1 hour before consultation ends
+const bookingClose = new Date(consultationEnd);
+bookingClose.setHours(
+  bookingClose.getHours() - 1,
+);
+
+const now = new Date();
+
+if (now < bookingOpen) {
+  throw new BadRequestException(
+    'Booking window has not opened yet',
+  );
+}
+
+if (now > bookingClose) {
+  throw new BadRequestException(
+    'Booking window has closed',
+  );
+}
 
 const appointmentDateTime = new Date(
   `${date}T${startTime}:00`,

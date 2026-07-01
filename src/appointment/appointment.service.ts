@@ -113,9 +113,7 @@ return {
 
    
 
-    // Booking allowed only for today
-
-const appointmentDate = new Date(date);
+ const appointmentDate = new Date(date);
 
 if (isNaN(appointmentDate.getTime())) {
   throw new BadRequestException(
@@ -128,12 +126,14 @@ const today = new Date();
 appointmentDate.setHours(0, 0, 0, 0);
 today.setHours(0, 0, 0, 0);
 
-if (appointmentDate.getTime() !== today.getTime()) {
+// Past date validation
+if (appointmentDate < today) {
   throw new BadRequestException(
-    'Appointments can only be booked for today',
+    'Past appointments cannot be booked',
   );
 }
-// Booking window validation
+
+// Fetch doctor's availability
 const availability =
   await this.availabilityService.getAvailabilityByDate(
     docId,
@@ -142,9 +142,42 @@ const availability =
 
 if (!availability || availability.length === 0) {
   throw new BadRequestException(
-    'Doctor unavailable today',
+    'Doctor unavailable for the selected date',
   );
 }
+
+const doctorAvailability = availability[0] as any;
+
+// Future booking validation
+if (appointmentDate > today) {
+  if (!doctorAvailability.allowFutureBooking) {
+    throw new BadRequestException(
+      'Doctor does not allow future appointments',
+    );
+  }
+
+  const maxFutureBookingDays =
+    doctorAvailability.maxFutureBookingDays ?? 7;
+    if (maxFutureBookingDays < 0) {
+  throw new BadRequestException(
+    'Invalid doctor availability configuration',
+  );
+}
+
+
+  const maxAllowedDate = new Date(today);
+  maxAllowedDate.setDate(
+    maxAllowedDate.getDate() + maxFutureBookingDays,
+  );
+  maxAllowedDate.setHours(0, 0, 0, 0);
+
+  if (appointmentDate > maxAllowedDate) {
+    throw new BadRequestException(
+      `Appointments can only be booked up to ${maxFutureBookingDays} days in advance`,
+    );
+  }
+}
+
 
 const consultation = availability[0] as any;
 
@@ -156,30 +189,35 @@ const consultationEnd = new Date(
   `${date}T${consultation.endTime}:00`,
 );
 
-// Booking opens 2 hours before consultation starts
-const bookingOpen = new Date(consultationStart);
-bookingOpen.setHours(
-  bookingOpen.getHours() - 2,
-);
+const isTodayBooking =
+  appointmentDate.getTime() === today.getTime();
 
-// Booking closes 1 hour before consultation ends
-const bookingClose = new Date(consultationEnd);
-bookingClose.setHours(
-  bookingClose.getHours() - 1,
-);
-
-const now = new Date();
-
-if (now < bookingOpen) {
-  throw new BadRequestException(
-    'Booking window has not opened yet',
+if (isTodayBooking) {
+  // Booking opens 2 hours before consultation starts
+  const bookingOpen = new Date(consultationStart);
+  bookingOpen.setHours(
+    bookingOpen.getHours() - 2,
   );
-}
 
-if (now > bookingClose) {
-  throw new BadRequestException(
-    'Booking window has closed',
+  // Booking closes 1 hour before consultation ends
+  const bookingClose = new Date(consultationEnd);
+  bookingClose.setHours(
+    bookingClose.getHours() - 1,
   );
+
+  const now = new Date();
+
+  if (now < bookingOpen) {
+    throw new BadRequestException(
+      'Booking window has not opened yet',
+    );
+  }
+
+  if (now > bookingClose) {
+    throw new BadRequestException(
+      'Booking window has closed',
+    );
+  }
 }
 
 const appointmentDateTime = new Date(

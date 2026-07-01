@@ -7,7 +7,7 @@ export class CreateDoctorProfileDto {
 
   @IsString()
   @IsNotEmpty()
-  specialization!: string;
+  specialization!: string;  
 
   @IsNumber()
   experience!: number;

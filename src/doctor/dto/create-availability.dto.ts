@@ -1,4 +1,11 @@
-import { IsNotEmpty, IsString, IsNumber } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsNumber,
+  IsBoolean,
+  IsOptional,
+  Min,
+} from 'class-validator';
 
 export class CreateAvailabilityDto {
   @IsNumber()
@@ -15,4 +22,13 @@ export class CreateAvailabilityDto {
   @IsString()
   @IsNotEmpty()
   endTime!: string;
+
+  @IsOptional()
+  @IsBoolean()
+  allowFutureBooking?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  maxFutureBookingDays?: number;
 }

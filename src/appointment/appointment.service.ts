@@ -148,6 +148,7 @@ if (!availability || availability.length === 0) {
 
 const doctorAvailability = availability[0] as any;
 
+
 // Future booking validation
 if (appointmentDate > today) {
   if (!doctorAvailability.allowFutureBooking) {

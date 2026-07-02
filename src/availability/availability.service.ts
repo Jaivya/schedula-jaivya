@@ -39,6 +39,24 @@ export class AvailabilityService {
         'Request body is missing',
       );
     }
+    await this.doctorService.findById(data.doctorId);
+    if (
+  data.maxFutureBookingDays !== undefined &&
+  data.maxFutureBookingDays < 0
+) {
+  throw new BadRequestException(
+    'Future booking days cannot be negative',
+  );
+}
+
+if (
+  data.allowFutureBooking === false &&
+  data.maxFutureBookingDays !== undefined
+) {
+  throw new BadRequestException(
+    'maxFutureBookingDays should only be provided when future booking is enabled',
+  );
+}
 
     if (
       !['STREAM', 'WAVE'].includes(
@@ -105,6 +123,13 @@ export class AvailabilityService {
 
     const availability =
       await this.availabilityModel.create(data);
+      if (
+  data.allowFutureBooking === true &&
+  (data.maxFutureBookingDays === undefined ||
+    data.maxFutureBookingDays === null)
+) {
+  data.maxFutureBookingDays = 7;
+}
 
     return {
       message:

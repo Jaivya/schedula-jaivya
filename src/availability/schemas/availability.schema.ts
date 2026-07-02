@@ -1,8 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
-export type AvailabilityDocument =
-  Availability & Document;
+export type AvailabilityDocument = Availability & Document;
 
 @Schema()
 export class Availability {
@@ -34,9 +33,17 @@ export class Availability {
 
   @Prop()
   capacity?: number;
+
+  @Prop({
+    default: false,
+  })
+  allowFutureBooking!: boolean;
+
+  @Prop({
+    min: 0,
+  })
+  maxFutureBookingDays?: number;
 }
 
 export const AvailabilitySchema =
-  SchemaFactory.createForClass(
-    Availability,
-  );
+  SchemaFactory.createForClass(Availability);

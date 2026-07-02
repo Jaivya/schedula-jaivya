@@ -7,13 +7,20 @@ import { AuthService } from './auth.service';
 import { UsersModule } from '../users/users.module';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
+import { DoctorModule } from '../doctor/doctor.module';
+import { PatientModule } from '../patient/patient.module';
+
 @Module({
   imports: [
     UsersModule,
+    DoctorModule,
+    PatientModule,
     PassportModule,
     JwtModule.register({
       secret: 'mySecretKey',
-      signOptions: { expiresIn: '1h' },
+      signOptions: {
+        expiresIn: '1h',
+      },
     }),
   ],
   controllers: [AuthController],
